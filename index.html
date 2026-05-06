@@ -4,6 +4,13 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Estrada Family Finance</title>
+  <!-- ══ FAVICON + PWA ══ -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231a2744'/%3E%3Cstop offset='1' stop-color='%233b82f6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ctext x='50' y='68' font-family='Arial,sans-serif' font-size='58' font-weight='900' text-anchor='middle' fill='white'%3E%E2%82%B1%3C/text%3E%3C/svg%3E"/>
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231a2744'/%3E%3Cstop offset='1' stop-color='%233b82f6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ctext x='50' y='68' font-family='Arial,sans-serif' font-size='58' font-weight='900' text-anchor='middle' fill='white'%3E%E2%82%B1%3C/text%3E%3C/svg%3E"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Estrada Finance"/>
+  <meta name="theme-color" content="#1a2744"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -192,6 +199,26 @@ tr:hover td{background:rgba(255,255,255,0.02);}
 .calc-result .good{color:var(--green);}
 input[type=range]{width:100%;-webkit-appearance:none;height:6px;background:var(--border);border-radius:3px;outline:none;margin:8px 0;}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;background:var(--blue);border-radius:50%;cursor:pointer;}
+
+/* ── CREDIT CARD STYLES ── */
+.cc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:var(--transition);}
+.cc-card:hover{border-color:#3d5270;}
+.cc-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
+.cc-name{font-size:15px;font-weight:700;color:#fff;}
+.cc-bank{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.util-bar{height:10px;border-radius:5px;background:var(--border);overflow:hidden;margin:6px 0;}
+.util-fill{height:100%;border-radius:5px;transition:width 0.5s ease;}
+.util-green{background:var(--green);}
+.util-amber{background:var(--amber);}
+.util-orange{background:#f97316;}
+.util-red{background:var(--red);}
+.cc-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.cc-stat-label{font-size:10px;color:var(--text-subtle);text-transform:uppercase;letter-spacing:0.5px;}
+.cc-stat-value{font-size:15px;font-weight:700;color:#fff;margin-top:2px;}
+.min-payment-trap{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;}
+.min-payment-trap p{font-size:12px;color:#fca5a5;line-height:1.6;}
+.min-payment-trap strong{color:var(--red);}
+
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
@@ -286,6 +313,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <div class="nav-item" onclick="navigate('budget')"><span class="nav-icon">📋</span> Budget</div>
     <div class="nav-item" onclick="navigate('loans')"><span class="nav-icon">🏦</span> Loans & Debts</div>
     <div class="nav-item" onclick="navigate('goals')"><span class="nav-icon">🎯</span> Goals</div>
+    <div class="nav-item" onclick="navigate('creditcards')"><span class="nav-icon">💳</span> Credit Cards</div>
     <div class="nav-item" onclick="navigate('settings')"><span class="nav-icon">⚙️</span> Settings</div>
   </div>
   <div class="sidebar-footer">
@@ -409,6 +437,44 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
       <div id="paidLoanCards" style="display:none;"></div>
     </div>
+  </div>
+
+
+  <!-- CREDIT CARDS -->
+  <div class="page" id="page-creditcards">
+    <div class="section-header">
+      <div><div class="section-title">Credit Cards</div><div class="section-sub">Track balances, charges & interest</div></div>
+      <button class="btn btn-primary" onclick="openModal('ccModal')">+ Add Card</button>
+    </div>
+    <!-- Summary bar -->
+    <div class="stat-grid" style="margin-bottom:20px;">
+      <div class="card"><div class="card-title">Total CC Debt</div><div class="card-value amount-negative" id="ccTotalDebt">₱0</div></div>
+      <div class="card"><div class="card-title">Available Credit</div><div class="card-value amount-positive" id="ccAvailable">₱0</div></div>
+      <div class="card"><div class="card-title">Overall Utilization</div><div class="card-value" id="ccUtilization">0%</div><div class="card-sub" id="ccUtilNote"></div></div>
+      <div class="card"><div class="card-title">Min Payments Due</div><div class="card-value" id="ccMinPayments">₱0</div><div class="card-sub">This month</div></div>
+    </div>
+    <!-- Owner split -->
+    <div id="ccOwnerSplit" style="display:none;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div class="card" style="border-left:3px solid var(--blue);">
+          <div class="card-title">👤 Jesse</div>
+          <div style="font-size:18px;font-weight:800;color:var(--red);" id="ccJesseDebt">₱0</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="ccJesseNote"></div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--purple);">
+          <div class="card-title">👤 Veron</div>
+          <div style="font-size:18px;font-weight:800;color:var(--red);" id="ccVeronDebt">₱0</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="ccVeronNote"></div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--teal);">
+          <div class="card-title">👥 Joint</div>
+          <div style="font-size:18px;font-weight:800;color:var(--red);" id="ccJointDebt">₱0</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="ccJointNote"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Card list -->
+    <div id="ccCards"><div class="loader"><div class="spinner"></div> Loading cards...</div></div>
   </div>
 
   <!-- GOALS -->
@@ -669,6 +735,102 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   </div>
 </div>
 
+
+<!-- Add Credit Card Modal -->
+<div class="modal-overlay" id="ccModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">💳 Add Credit Card</div><button class="modal-close" onclick="closeModal('ccModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Card Name</label><input type="text" class="form-control" id="cc_name" placeholder="e.g. BPI Gold Visa"/></div>
+        <div class="form-group"><label class="form-label">Bank / Issuer</label><input type="text" class="form-control" id="cc_bank" placeholder="e.g. BPI, BDO, Metrobank"/></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Whose Card?</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <label style="cursor:pointer;"><input type="radio" name="cc_owner" value="Jesse" style="display:none;" onchange="updateCCOwnerUI()" checked/><div class="owner-btn" id="ccOwnerBtn_Jesse" style="text-align:center;padding:10px;border-radius:8px;border:2px solid var(--blue);background:rgba(59,130,246,0.15);color:var(--blue);font-size:13px;font-weight:700;">👤 Jesse</div></label>
+          <label style="cursor:pointer;"><input type="radio" name="cc_owner" value="Veron" style="display:none;" onchange="updateCCOwnerUI()"/><div class="owner-btn" id="ccOwnerBtn_Veron" style="text-align:center;padding:10px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-size:13px;font-weight:700;">👤 Veron</div></label>
+          <label style="cursor:pointer;"><input type="radio" name="cc_owner" value="Joint" style="display:none;" onchange="updateCCOwnerUI()"/><div class="owner-btn" id="ccOwnerBtn_Joint" style="text-align:center;padding:10px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-size:13px;font-weight:700;">👥 Joint</div></label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Credit Limit (₱)</label><input type="number" class="form-control" id="cc_limit" placeholder="e.g. 50000" oninput="ccAutoCalc()"/></div>
+        <div class="form-group"><label class="form-label">Current Balance (₱)</label><input type="number" class="form-control" id="cc_balance" placeholder="What you currently owe" oninput="ccAutoCalc()"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Statement Balance (₱)</label><input type="number" class="form-control" id="cc_statement" placeholder="Last billing statement" oninput="ccAutoCalc()"/></div>
+        <div class="form-group"><label class="form-label">Interest Rate (% per month)</label><input type="number" class="form-control" id="cc_rate" placeholder="e.g. 3.5" step="0.01" oninput="ccAutoCalc()"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Minimum Payment (₱)</label><input type="number" class="form-control" id="cc_minpayment" placeholder="Or leave blank to auto-compute" oninput="ccAutoCalc()"/></div>
+        <div class="form-group"><label class="form-label">Payment Due Day</label><input type="number" class="form-control" id="cc_due" placeholder="e.g. 15" min="1" max="31"/></div>
+      </div>
+      <!-- Auto-computed preview -->
+      <div id="ccCalcResult" style="display:none;margin-bottom:16px;">
+        <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;">⚠️ Minimum Payment Warning</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div><div style="font-size:10px;color:var(--text-subtle);">Min Payment</div><div style="font-size:16px;font-weight:800;color:var(--amber);" id="ccMinDisplay">₱0</div></div>
+            <div><div style="font-size:10px;color:var(--text-subtle);">Months to Clear</div><div style="font-size:16px;font-weight:800;color:var(--red);" id="ccMonthsDisplay">—</div></div>
+            <div><div style="font-size:10px;color:var(--text-subtle);">Total Interest</div><div style="font-size:16px;font-weight:800;color:var(--red);" id="ccInterestDisplay">₱0</div></div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);" id="ccWarningText"></div>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><input type="text" class="form-control" id="cc_notes" placeholder="Any notes..."/></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ccModal')">Cancel</button><button class="btn btn-primary" onclick="submitCC()">Save Card</button></div>
+  </div>
+</div>
+
+<!-- Add Charge Modal -->
+<div class="modal-overlay" id="ccChargeModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">🛒 Add Charge</div><button class="modal-close" onclick="closeModal('ccChargeModal')">✕</button></div>
+    <div class="modal-body">
+      <div id="ccChargeName" style="font-size:15px;font-weight:700;color:#fff;margin-bottom:16px;"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Amount (₱)</label><input type="number" class="form-control" id="charge_amount" placeholder="0.00" step="0.01"/></div>
+        <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-control" id="charge_date"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Merchant / Description</label><input type="text" class="form-control" id="charge_desc" placeholder="e.g. SM Supermarket, Grab"/></div>
+      <div class="form-group"><label class="form-label">Category</label><select class="form-control" id="charge_category"></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ccChargeModal')">Cancel</button><button class="btn btn-primary" onclick="submitCharge()">Add Charge</button></div>
+  </div>
+</div>
+
+<!-- CC Payment Modal -->
+<div class="modal-overlay" id="ccPaymentModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">💳 Record CC Payment</div><button class="modal-close" onclick="closeModal('ccPaymentModal')">✕</button></div>
+    <div class="modal-body">
+      <div id="ccPaymentCardName" style="font-size:15px;font-weight:700;color:#fff;margin-bottom:4px;"></div>
+      <div id="ccPaymentCardBalance" style="font-size:13px;color:var(--text-muted);margin-bottom:20px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+        <button class="btn btn-ghost btn-sm" style="justify-content:center;" onclick="fillCCPayment('minimum')">Minimum</button>
+        <button class="btn btn-ghost btn-sm" style="justify-content:center;" onclick="fillCCPayment('statement')">Statement</button>
+        <button class="btn btn-ghost btn-sm" style="justify-content:center;" onclick="fillCCPayment('full')">Full Balance</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Payment Amount (₱)</label><input type="number" class="form-control" id="cc_payment_amount" placeholder="0.00" step="0.01" oninput="previewCCPayment()"/></div>
+        <div class="form-group"><label class="form-label">Payment Date</label><input type="date" class="form-control" id="cc_payment_date"/></div>
+      </div>
+      <!-- Interest warning -->
+      <div id="ccPaymentWarning" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-size:12px;color:var(--amber);" id="ccPaymentWarningText"></div>
+      </div>
+      <!-- New balance preview -->
+      <div id="ccPaymentPreview" style="display:none;background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 14px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">New Balance After Payment</div>
+        <div style="font-size:20px;font-weight:800;color:var(--green);" id="ccNewBalance">₱0</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="ccPaymentNote"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ccPaymentModal')">Cancel</button><button class="btn btn-success" onclick="submitCCPayment()">Record Payment</button></div>
+  </div>
+</div>
+
 <!-- Category -->
 <div class="modal-overlay" id="categoryModal">
   <div class="modal">
@@ -698,7 +860,7 @@ const SCRIPT_URL_KEY = 'estrada_script_url';
 let state = {
   currentPage:'dashboard', currentMonth:new Date().getMonth()+1,
   currentYear:new Date().getFullYear(), categories:[], expenses:[],
-  income:[], loans:[], budget:[], goals:[], scriptUrl:'',
+  income:[], loans:[], budget:[], goals:[], creditCards:[], scriptUrl:'',
 };
 let pinBuffer = '';
 
@@ -871,6 +1033,7 @@ function refreshCurrentPage() {
     case 'expenses': loadExpenses(); break;
     case 'budget': loadBudget(); break;
     case 'loans': loadLoans(); break;
+    case 'creditcards': loadCreditCards(); break;
     case 'goals': loadGoals(); break;
     case 'settings': loadSettings(); break;
   }
@@ -1734,6 +1897,366 @@ async function submitCategory() {
   if(res?.error){showToast(res.error,'error');return;}
   if(res?.success){showToast('Category added!');closeModal('categoryModal');document.getElementById('cat_name').value='';loadCategories();loadSettings();}
 }
+
+
+// ══════════════════════════════════════════════
+// CREDIT CARD SYSTEM
+// ══════════════════════════════════════════════
+
+// ── CC Owner UI ──
+function updateCCOwnerUI(){
+  ['Jesse','Veron','Joint'].forEach(o=>{
+    const btn=document.getElementById('ccOwnerBtn_'+o);
+    const radio=document.querySelector(`input[name="cc_owner"][value="${o}"]`);
+    if(!btn||!radio) return;
+    const color=o==='Jesse'?'var(--blue)':o==='Veron'?'var(--purple)':'var(--teal)';
+    const bg=o==='Jesse'?'rgba(59,130,246,0.15)':o==='Veron'?'rgba(139,92,246,0.15)':'rgba(20,184,166,0.15)';
+    if(radio.checked){btn.style.border=`2px solid ${color}`;btn.style.background=bg;btn.style.color=color;}
+    else{btn.style.border='2px solid var(--border)';btn.style.background='transparent';btn.style.color='var(--text-muted)';}
+  });
+}
+
+// ── CC Interest Calculator ──
+// PH credit cards charge monthly interest on revolving balance
+function calcCCMinPayment(balance, monthlyRate){
+  // Typical PH: min payment = 2-5% of balance or ₱500, whichever is higher
+  const pct = Math.max(balance * 0.03, 500);
+  return Math.round(pct);
+}
+
+function calcCCMinPayoffTime(balance, monthlyRate, minPctRate){
+  // Simulate month by month paying minimum each time
+  minPctRate = minPctRate || 0.03;
+  let bal = Number(balance);
+  let months = 0, totalInterest = 0;
+  while(bal > 0.01 && months < 600){
+    const interest = bal * (monthlyRate/100);
+    totalInterest += interest;
+    bal += interest;
+    const payment = Math.max(bal * minPctRate, 500);
+    bal -= Math.min(payment, bal);
+    months++;
+  }
+  return { months, totalInterest: Math.round(totalInterest) };
+}
+
+function ccAutoCalc(){
+  const balance  = Number(document.getElementById('cc_balance').value)||0;
+  const rate     = Number(document.getElementById('cc_rate').value)||0;
+  const manualMin= Number(document.getElementById('cc_minpayment').value)||0;
+  const resultBox= document.getElementById('ccCalcResult');
+  if(!balance||!rate){ resultBox.style.display='none'; return; }
+  const minPayment = manualMin > 0 ? manualMin : calcCCMinPayment(balance, rate);
+  const trap = calcCCMinPayoffTime(balance, rate, minPayment/balance);
+  const monthlyInterest = balance * (rate/100);
+  document.getElementById('ccMinDisplay').textContent = fmt(minPayment);
+  document.getElementById('ccMonthsDisplay').textContent = trap.months + ' mos';
+  document.getElementById('ccInterestDisplay').textContent = fmt(trap.totalInterest);
+  document.getElementById('ccWarningText').innerHTML =
+    `Paying only the minimum on ₱${balance.toLocaleString()} at ${rate}%/month:<br/>` +
+    `<strong style="color:var(--red);">You'll pay ${fmt(trap.totalInterest)} in interest</strong> and take <strong style="color:var(--red);">${trap.months} months</strong> to clear this card.<br/>` +
+    `This month's interest alone: <strong style="color:var(--amber);">${fmt(Math.round(monthlyInterest))}</strong>`;
+  resultBox.style.display = 'block';
+}
+
+// ── Load Credit Cards ──
+async function loadCreditCards(){
+  const cards = await apiGet('getCreditCards');
+  if(!cards) return;
+  state.creditCards = cards;
+
+  const active = cards.filter(c=>c.status!=='Closed');
+  const totalDebt    = active.reduce((s,c)=>s+Number(c.currentBalance),0);
+  const totalLimit   = active.reduce((s,c)=>s+Number(c.creditLimit),0);
+  const available    = totalLimit - totalDebt;
+  const utilPct      = totalLimit>0 ? Math.round((totalDebt/totalLimit)*100) : 0;
+  const totalMin     = active.reduce((s,c)=>s+Number(c.minPayment||calcCCMinPayment(c.currentBalance,c.interestRate)),0);
+
+  document.getElementById('ccTotalDebt').textContent    = fmt(totalDebt);
+  document.getElementById('ccAvailable').textContent    = fmt(available);
+  document.getElementById('ccUtilization').textContent  = utilPct+'%';
+  document.getElementById('ccUtilization').style.color  = utilPct>60?'var(--red)':utilPct>30?'var(--amber)':'var(--green)';
+  document.getElementById('ccUtilNote').textContent     = utilPct<=30?'🟢 Healthy':utilPct<=60?'🟡 Watch it':utilPct<=90?'🟠 High':'🔴 Maxed out';
+  document.getElementById('ccMinPayments').textContent  = fmt(totalMin);
+
+  // Owner split
+  const owners = ['Jesse','Veron','Joint'];
+  const hasOwners = cards.some(c=>(c.notes||'').includes('owner:'));
+  if(hasOwners){
+    document.getElementById('ccOwnerSplit').style.display='block';
+    owners.forEach(o=>{
+      const oCards = active.filter(c=>getCCOwner(c)===o);
+      const oDebt  = oCards.reduce((s,c)=>s+Number(c.currentBalance),0);
+      const oMin   = oCards.reduce((s,c)=>s+Number(c.minPayment||calcCCMinPayment(c.currentBalance,c.interestRate)),0);
+      document.getElementById('cc'+o+'Debt').textContent = fmt(oDebt);
+      document.getElementById('cc'+o+'Note').textContent = oCards.length ? `${fmt(oMin)}/mo min · ${oCards.length} card${oCards.length!==1?'s':''}` : 'No cards';
+    });
+  }
+
+  if(!cards.length){
+    document.getElementById('ccCards').innerHTML='<div class="empty-state"><div class="empty-icon">💳</div><p>No credit cards added yet.</p></div>';
+    return;
+  }
+
+  // Sort by utilization (highest first)
+  const sorted=[...active].sort((a,b)=>{
+    const uA=a.creditLimit>0?(a.currentBalance/a.creditLimit):0;
+    const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
+    return uB-uA;
+  });
+  document.getElementById('ccCards').innerHTML=
+    `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
+      ${sorted.map((c,i)=>renderCCCard(c,i)).join('')}
+    </div>`;
+}
+
+function getCCOwner(c){
+  const notes=c.notes||'';
+  const m=notes.match(/owner:(Jesse|Veron|Joint)/);
+  return m?m[1]:'Jesse';
+}
+
+function renderCCCard(c, idx){
+  const balance   = Number(c.currentBalance)||0;
+  const limit     = Number(c.creditLimit)||0;
+  const statement = Number(c.statementBalance)||0;
+  const rate      = Number(c.interestRate)||0;
+  const minPmt    = Number(c.minPayment)||calcCCMinPayment(balance,rate);
+  const utilPct   = limit>0 ? Math.round((balance/limit)*100) : 0;
+  const available = limit - balance;
+  const owner     = getCCOwner(c);
+  const ownerColor= owner==='Jesse'?'var(--blue)':owner==='Veron'?'var(--purple)':'var(--teal)';
+  const ownerBg   = owner==='Jesse'?'rgba(59,130,246,0.12)':owner==='Veron'?'rgba(139,92,246,0.12)':'rgba(20,184,166,0.12)';
+  const utilClass = utilPct<=30?'util-green':utilPct<=60?'util-amber':utilPct<=90?'util-orange':'util-red';
+  const utilLabel = utilPct<=30?'🟢 Healthy':utilPct<=60?'🟡 Watch it':utilPct<=90?'🟠 High':'🔴 Maxed out';
+
+  // Min payment trap calculation
+  const trap = rate>0 ? calcCCMinPayoffTime(balance, rate, minPmt/balance) : null;
+  const monthlyInterest = Math.round(balance*(rate/100));
+
+  // Interest warning if paying minimum
+  const trapHtml = trap && trap.months > 1 ? `
+    <div class="min-payment-trap">
+      <p>⚠️ Paying minimum only (${fmt(minPmt)}/mo):</p>
+      <p>You'll pay <strong>${fmt(trap.totalInterest)}</strong> in interest over <strong>${trap.months} months</strong></p>
+      <p>This month's interest: <strong>${fmt(monthlyInterest)}</strong></p>
+    </div>` : '';
+
+  return `<div class="cc-card">
+    <div class="cc-header">
+      <div>
+        <div class="cc-name">${c.cardName}</div>
+        <div class="cc-bank">${c.bank} · Due day ${c.dueDay||'—'}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${ownerBg};color:${ownerColor};">👤 ${owner}</span>
+      </div>
+    </div>
+    <!-- Utilization bar -->
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:12px;color:var(--text-muted);">Utilization ${utilPct}% · ${utilLabel}</span>
+        <span style="font-size:12px;color:var(--text-muted);">${fmt(balance)} / ${fmt(limit)}</span>
+      </div>
+      <div class="util-bar"><div class="util-fill ${utilClass}" style="width:${Math.min(utilPct,100)}%;"></div></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Available: <strong style="color:var(--green);">${fmt(available)}</strong></div>
+    </div>
+    <!-- Stats -->
+    <div class="cc-stats">
+      <div><div class="cc-stat-label">Current Balance</div><div class="cc-stat-value" style="color:var(--red);">${fmt(balance)}</div></div>
+      <div><div class="cc-stat-label">Statement Balance</div><div class="cc-stat-value">${fmt(statement)}</div></div>
+      <div><div class="cc-stat-label">Min Payment</div><div class="cc-stat-value" style="color:var(--amber);">${fmt(minPmt)}</div></div>
+      <div><div class="cc-stat-label">Interest Rate</div><div class="cc-stat-value">${rate}%/mo</div></div>
+    </div>
+    ${trapHtml}
+    <!-- Actions -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" onclick="openCCChargeModal(${idx})">🛒 Add Charge</button>
+      <button class="btn btn-success btn-sm" onclick="openCCPaymentModal(${idx})">💳 Pay</button>
+      <button class="btn btn-ghost btn-sm" onclick="updateCCStatement(${idx})">📋 Update Statement</button>
+    </div>
+  </div>`;
+}
+
+// ── CC Charge Modal ──
+let activeCCIdx = null;
+
+function openCCChargeModal(idx){
+  const sorted=[...state.creditCards].filter(c=>c.status!=='Closed').sort((a,b)=>{
+    const uA=a.creditLimit>0?(a.currentBalance/a.creditLimit):0;
+    const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
+    return uB-uA;
+  });
+  activeCCIdx=idx;
+  const card=sorted[idx];
+  document.getElementById('ccChargeName').textContent=`${card.cardName} · Balance: ${fmt(card.currentBalance)}`;
+  document.getElementById('charge_amount').value='';
+  document.getElementById('charge_desc').value='';
+  document.getElementById('charge_date').value=new Date().toISOString().split('T')[0];
+  // Populate category dropdown
+  const sel=document.getElementById('charge_category');
+  sel.innerHTML=state.categories.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
+  openModal('ccChargeModal');
+}
+
+async function submitCharge(){
+  const sorted=[...state.creditCards].filter(c=>c.status!=='Closed').sort((a,b)=>{
+    const uA=a.creditLimit>0?(a.currentBalance/a.creditLimit):0;
+    const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
+    return uB-uA;
+  });
+  const card=sorted[activeCCIdx];
+  const amount=Number(document.getElementById('charge_amount').value);
+  const desc=document.getElementById('charge_desc').value;
+  const date=document.getElementById('charge_date').value;
+  const category=document.getElementById('charge_category').value;
+  if(!amount||amount<=0){showToast('Enter a charge amount','error');return;}
+  const newBalance=Number(card.currentBalance)+amount;
+  // Update card balance
+  const res=await apiPost('updateCCBalance',{rowIndex:card.rowIndex,newBalance});
+  if(!res?.success){showToast('Error adding charge','error');return;}
+  // Log as expense too
+  await apiPost('addExpense',{data:{date,person:getCCOwner(card),category,description:`${desc||category} [${card.cardName}]`,amount,paymentMethod:'Credit Card',notes:`CC: ${card.cardName}`}});
+  closeModal('ccChargeModal');
+  showToast(`Charge of ${fmt(amount)} added to ${card.cardName}`);
+  loadCreditCards();
+}
+
+// ── CC Payment Modal ──
+function openCCPaymentModal(idx){
+  const sorted=[...state.creditCards].filter(c=>c.status!=='Closed').sort((a,b)=>{
+    const uA=a.creditLimit>0?(a.currentBalance/a.creditLimit):0;
+    const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
+    return uB-uA;
+  });
+  activeCCIdx=idx;
+  const card=sorted[idx];
+  const minPmt=Number(card.minPayment)||calcCCMinPayment(card.currentBalance,card.interestRate);
+  document.getElementById('ccPaymentCardName').textContent=card.cardName;
+  document.getElementById('ccPaymentCardBalance').textContent=
+    `Balance: ${fmt(card.currentBalance)} · Statement: ${fmt(card.statementBalance||0)} · Min: ${fmt(minPmt)}`;
+  const amtEl=document.getElementById('cc_payment_amount');
+  amtEl.value='';
+  amtEl.dataset.minPayment=minPmt;
+  amtEl.dataset.statement=card.statementBalance||card.currentBalance;
+  amtEl.dataset.fullBalance=card.currentBalance;
+  amtEl.dataset.rate=card.interestRate;
+  document.getElementById('cc_payment_date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('ccPaymentWarning').style.display='none';
+  document.getElementById('ccPaymentPreview').style.display='none';
+  openModal('ccPaymentModal');
+}
+
+function fillCCPayment(type){
+  const el=document.getElementById('cc_payment_amount');
+  if(type==='minimum')  el.value=Number(el.dataset.minPayment).toFixed(2);
+  if(type==='statement') el.value=Number(el.dataset.statement).toFixed(2);
+  if(type==='full')     el.value=Number(el.dataset.fullBalance).toFixed(2);
+  previewCCPayment();
+}
+
+function previewCCPayment(){
+  const el=document.getElementById('cc_payment_amount');
+  const amount=Number(el.value)||0;
+  const balance=Number(el.dataset.fullBalance)||0;
+  const rate=Number(el.dataset.rate)||0;
+  const minPmt=Number(el.dataset.minPayment)||0;
+  const statement=Number(el.dataset.statement)||0;
+  if(!amount) return;
+  const newBal=Math.max(0,balance-amount);
+  document.getElementById('ccNewBalance').textContent=fmt(newBal);
+  const noteEl=document.getElementById('ccPaymentNote');
+  if(newBal===0) noteEl.innerHTML='<span style="color:var(--green);font-weight:700;">🎉 Card fully paid off!</span>';
+  else noteEl.textContent=`${fmt(amount)} payment · ${fmt(newBal)} remaining`;
+  document.getElementById('ccPaymentPreview').style.display='block';
+  // Interest warning if paying less than statement balance
+  const warnEl=document.getElementById('ccPaymentWarning');
+  const warnText=document.getElementById('ccPaymentWarningText');
+  if(rate>0 && amount<statement && newBal>0){
+    const remainingInterest=Math.round(newBal*(rate/100));
+    warnEl.style.display='block';
+    if(amount<=minPmt){
+      const trap=calcCCMinPayoffTime(newBal,rate,minPmt/newBal);
+      warnText.innerHTML=`⚠️ Paying minimum only — you'll be charged <strong>${fmt(remainingInterest)}</strong> interest next month.<br/>At this rate: <strong>${trap.months} months</strong> and <strong>${fmt(trap.totalInterest)}</strong> total interest to clear.`;
+    } else {
+      warnText.innerHTML=`💡 Paying less than statement balance — <strong>${fmt(remainingInterest)}</strong> interest will be charged on the remaining ₱${newBal.toLocaleString()}.`;
+    }
+  } else {
+    warnEl.style.display='none';
+  }
+}
+
+async function submitCCPayment(){
+  const sorted=[...state.creditCards].filter(c=>c.status!=='Closed').sort((a,b)=>{
+    const uA=a.creditLimit>0?(a.currentBalance/a.creditLimit):0;
+    const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
+    return uB-uA;
+  });
+  const card=sorted[activeCCIdx];
+  const amount=Number(document.getElementById('cc_payment_amount').value);
+  if(!amount||amount<=0){showToast('Enter a payment amount','error');return;}
+  const newBal=Math.max(0,Number(card.currentBalance)-amount);
+  const res=await apiPost('updateCCBalance',{rowIndex:card.rowIndex,newBalance:newBal});
+  if(!res?.success){showToast('Error recording payment','error');return;}
+  closeModal('ccPaymentModal');
+  showToast(newBal===0?`🎉 ${card.cardName} fully paid off!`:`Payment of ${fmt(amount)} recorded!`);
+  loadCreditCards();
+}
+
+async function updateCCStatement(idx){
+  const sorted=[...state.creditCards].filter(c=>c.status!=='Closed').sort((a,b)=>{
+    const uA=a.creditLimit>0?(a.currentBalance/a.creditLimit):0;
+    const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
+    return uB-uA;
+  });
+  const card=sorted[idx];
+  const val=prompt(`Update statement balance for "${card.cardName}"\nCurrent statement: ${fmt(card.statementBalance||0)}\n\nNew statement balance (₱):`);
+  if(val===null) return;
+  const amount=Number(val);
+  if(isNaN(amount)||amount<0){showToast('Invalid amount','error');return;}
+  const res=await apiPost('updateCCStatement',{rowIndex:card.rowIndex,statementBalance:amount});
+  if(res?.success){showToast('Statement updated!');loadCreditCards();}
+}
+
+// ── Submit Add Card ──
+async function submitCC(){
+  const name=document.getElementById('cc_name').value;
+  const limit=document.getElementById('cc_limit').value;
+  if(!name||!limit){showToast('Card Name and Credit Limit are required','error');return;}
+  const ownerRadio=document.querySelector('input[name="cc_owner"]:checked');
+  const owner=ownerRadio?ownerRadio.value:'Jesse';
+  const baseNotes=document.getElementById('cc_notes').value;
+  const data={
+    cardName:   name,
+    bank:       document.getElementById('cc_bank').value,
+    creditLimit:limit,
+    currentBalance: document.getElementById('cc_balance').value||0,
+    statementBalance: document.getElementById('cc_statement').value||0,
+    interestRate: document.getElementById('cc_rate').value||0,
+    minPayment: document.getElementById('cc_minpayment').value||0,
+    dueDay:     document.getElementById('cc_due').value,
+    status:     'Active',
+    notes:      [`owner:${owner}`, baseNotes].filter(Boolean).join(' | '),
+  };
+  const res=await apiPost('addCreditCard',{data});
+  if(res?.success){
+    showToast('Card added!');
+    closeModal('ccModal');
+    ['cc_name','cc_bank','cc_limit','cc_balance','cc_statement','cc_rate','cc_minpayment','cc_due','cc_notes']
+      .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('ccCalcResult').style.display='none';
+    const jesseR=document.querySelector('input[name="cc_owner"][value="Jesse"]');
+    if(jesseR){jesseR.checked=true;updateCCOwnerUI();}
+    loadCreditCards();
+  }
+}
+
+// Wire CC payment preview
+document.addEventListener('DOMContentLoaded',()=>{
+  const ccAmtEl=document.getElementById('cc_payment_amount');
+  if(ccAmtEl) ccAmtEl.addEventListener('input',previewCCPayment);
+});
+
 
 document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
 </script>
