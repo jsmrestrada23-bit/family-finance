@@ -913,34 +913,147 @@ async function loadLoans() {
   document.getElementById('loanCards').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${sorted.map((l,i)=>renderLoanCard(l,i)).join('')}</div>`;
 }
 
-function calcLoan(balance,annualRate,monthlyPayment,extra) {
-  extra=extra||0;
-  const monthlyRate=annualRate/100/12;
-  const payment=Number(monthlyPayment)+Number(extra);
-  if(!payment||payment<=0) return{monthsToPayoff:0,totalPaid:0,totalInterest:0,payoffDate:'N/A'};
-  if(monthlyRate===0){const m=Math.ceil(balance/payment);return{monthsToPayoff:m,totalPaid:m*payment,totalInterest:0,payoffDate:payoffDateStr(m)};}
+// ══ SMART LOAN ENGINE ══
+// Auto-detects interest method from the numbers you enter.
+// Tries diminishing balance first, then add-on rate,
+// picks whichever best matches your actual monthly payment.
+
+function payoffDateStr(months){
+  if(months>=9999) return 'Never (payment too low)';
+  const d=new Date(); d.setMonth(d.getMonth()+months);
+  return d.toLocaleString('default',{month:'short',year:'numeric'});
+}
+
+// Diminishing balance (reducing balance) — standard bank method
+// Interest charged on remaining balance each month
+function calcDiminishing(balance, annualRate, monthlyPayment, extra) {
+  extra = extra||0;
+  const monthlyRate = annualRate/100/12;
+  const payment = Number(monthlyPayment) + Number(extra);
+  if(!payment||payment<=0) return{monthsToPayoff:0,totalPaid:0,totalInterest:0,payoffDate:'N/A',method:'diminishing'};
+  if(monthlyRate===0){
+    const m=Math.ceil(balance/payment);
+    return{monthsToPayoff:m,totalPaid:Math.round(m*payment),totalInterest:0,payoffDate:payoffDateStr(m),method:'zero-interest'};
+  }
   let remaining=Number(balance),months=0,totalPaid=0,totalInterest=0;
   while(remaining>0.01&&months<600){
     const interest=remaining*monthlyRate;
     if(payment<=interest){months=9999;break;}
     const principal=Math.min(payment-interest,remaining);
-    totalInterest+=interest;totalPaid+=interest+principal;remaining-=principal;months++;
+    totalInterest+=interest; totalPaid+=interest+principal; remaining-=principal; months++;
   }
-  return{monthsToPayoff:months,totalPaid:Math.round(totalPaid),totalInterest:Math.round(totalInterest),payoffDate:payoffDateStr(months)};
+  // What the payment SHOULD be for this method
+  const expectedPayment = monthlyRate===0 ? balance/12 :
+    (balance * monthlyRate * Math.pow(1+monthlyRate,months)) / (Math.pow(1+monthlyRate,months)-1);
+  return{
+    monthsToPayoff:months, totalPaid:Math.round(totalPaid),
+    totalInterest:Math.round(totalInterest), payoffDate:payoffDateStr(months),
+    method:'diminishing', expectedPayment:Math.round(expectedPayment)
+  };
 }
-function payoffDateStr(months){
-  if(months>=9999)return 'Never (payment too low)';
-  const d=new Date();d.setMonth(d.getMonth()+months);
-  return d.toLocaleString('default',{month:'short',year:'numeric'});
+
+// Add-on rate method — interest computed on ORIGINAL amount for full term
+// Common in PH personal loans and in-house financing
+// Effective rate is roughly 1.8x the stated rate
+function calcAddOn(originalAmount, annualRate, monthlyPayment, extra) {
+  extra = extra||0;
+  const payment = Number(monthlyPayment) + Number(extra);
+  if(!payment||payment<=0) return{monthsToPayoff:0,totalPaid:0,totalInterest:0,payoffDate:'N/A',method:'addon'};
+  // Total interest = original * rate * years (estimated from payment)
+  // Estimate term from payment: months = originalAmount / (payment - monthly_interest)
+  const monthlyInterest = Number(originalAmount) * annualRate/100/12;
+  const principalPerMonth = payment - monthlyInterest;
+  if(principalPerMonth<=0) return{monthsToPayoff:9999,totalPaid:0,totalInterest:0,payoffDate:'Never (payment too low)',method:'addon'};
+  const months = Math.ceil(Number(originalAmount)/principalPerMonth);
+  const totalInterest = monthlyInterest * months;
+  const totalPaid = Number(originalAmount) + totalInterest;
+  return{
+    monthsToPayoff:months, totalPaid:Math.round(totalPaid),
+    totalInterest:Math.round(totalInterest), payoffDate:payoffDateStr(months),
+    method:'addon', expectedPayment:Math.round(payment)
+  };
+}
+
+// Smart detector — picks the best method based on your actual payment
+function detectLoanMethod(originalAmount, balance, annualRate, monthlyPayment) {
+  const orig = Number(originalAmount)||Number(balance);
+  const bal  = Number(balance);
+  const rate = Number(annualRate);
+  const pmt  = Number(monthlyPayment);
+
+  if(!rate || rate===0) return 'zero-interest';
+
+  // Compute what the payment SHOULD be under each method
+  const monthlyRate = rate/100/12;
+
+  // Diminishing: standard amortization formula (use balance as principal)
+  // Estimate remaining term first from balance
+  let dimMonths = 0, rem = bal;
+  while(rem>0.01&&dimMonths<600){
+    const int=rem*monthlyRate;
+    if(pmt<=int) break;
+    rem-=Math.min(pmt-int,rem); dimMonths++;
+  }
+  const dimExpected = dimMonths>0 ?
+    (bal*monthlyRate*Math.pow(1+monthlyRate,dimMonths))/(Math.pow(1+monthlyRate,dimMonths)-1) : pmt;
+
+  // Add-on: monthly interest on original
+  const addOnMonthlyInterest = orig * monthlyRate;
+  const addOnExpected = addOnMonthlyInterest + (orig / (dimMonths||12)); // principal + interest
+
+  const dimDiff = Math.abs(pmt - dimExpected);
+  const addOnDiff = Math.abs(pmt - addOnExpected);
+
+  // If payment is much higher than diminishing expects → likely add-on
+  // If payment is close to diminishing → use diminishing
+  if(addOnDiff < dimDiff && pmt > dimExpected * 1.15) return 'addon';
+  return 'diminishing';
+}
+
+// Master function — auto-detects and computes
+function calcLoan(balance, annualRate, monthlyPayment, extra, originalAmount) {
+  extra = extra||0;
+  const orig = Number(originalAmount)||Number(balance);
+  const bal  = Number(balance);
+  const rate = Number(annualRate);
+  const pmt  = Number(monthlyPayment);
+
+  if(!pmt||pmt<=0) return{monthsToPayoff:0,totalPaid:0,totalInterest:0,payoffDate:'N/A',method:'unknown',label:'Unknown'};
+  if(!rate||rate===0){
+    const m=Math.ceil(bal/pmt);
+    return{monthsToPayoff:m,totalPaid:Math.round(m*pmt),totalInterest:0,payoffDate:payoffDateStr(m),method:'zero-interest',label:'0% Interest'};
+  }
+
+  const detected = detectLoanMethod(orig, bal, rate, pmt);
+
+  let result;
+  if(detected==='addon'){
+    result = calcAddOn(orig, rate, pmt, extra);
+    result.label = 'Add-on Rate ~est.';
+    result.tooltip = 'Your payment suggests add-on interest (common in PH personal loans). Effective rate ≈ ' + Math.round(rate*1.8) + '% p.a.';
+  } else {
+    result = calcDiminishing(bal, rate, pmt, extra);
+    result.label = 'Diminishing Balance';
+    result.tooltip = 'Standard reducing balance method. Interest charged on remaining balance each month.';
+  }
+
+  return result;
 }
 
 function renderLoanCard(l,idx) {
-  const calc=calcLoan(l.currentBalance,l.interestRate,l.monthlyPayment,0);
+  const calc=calcLoan(l.currentBalance,l.interestRate,l.monthlyPayment,0,l.originalAmount);
   const paidPct=l.originalAmount>0?pct(l.originalAmount-l.currentBalance,l.originalAmount):0;
   const typeColors={Personal:'badge-blue',Mortgage:'badge-green',Car:'badge-amber','Credit Card':'badge-red',SSS:'badge-purple','Pag-IBIG':'badge-blue'};
+  // Effective rate note for add-on loans
+  const effectiveNote = calc.method==='addon'
+    ? `<div style="font-size:11px;color:var(--amber);margin-top:4px;">⚠️ Effective rate ≈ ${Math.round(Number(l.interestRate)*1.8)}% p.a. (add-on method detected)</div>`
+    : '';
   return `<div class="loan-card">
     <div class="loan-header">
-      <div><div class="loan-name">${l.name}</div><div class="loan-lender">${l.lender} · Due day ${l.dueDay||'—'}</div></div>
+      <div>
+        <div class="loan-name">${l.name}</div>
+        <div class="loan-lender">${l.lender} · Due day ${l.dueDay||'—'}</div>
+      </div>
       <span class="badge ${typeColors[l.type]||'badge-blue'}">${l.type}</span>
     </div>
     <div class="loan-stats">
@@ -949,20 +1062,35 @@ function renderLoanCard(l,idx) {
       <div><div class="loan-stat-label">Interest Rate</div><div class="loan-stat-value" style="color:var(--amber);">${l.interestRate}% p.a.</div></div>
       <div><div class="loan-stat-label">Payoff Date</div><div class="loan-stat-value" style="font-size:13px;">${calc.payoffDate}</div></div>
     </div>
+    <!-- Paid off progress -->
     <div style="margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:11px;color:var(--text-muted);">Paid off</span><span style="font-size:11px;color:var(--text-muted);">${paidPct}%</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:11px;color:var(--text-muted);">Paid off</span>
+        <span style="font-size:11px;color:var(--text-muted);">${paidPct}%</span>
+      </div>
       <div class="progress-wrap"><div class="progress-bar progress-green" style="width:${paidPct}%;"></div></div>
     </div>
+    <!-- Interest warning -->
     <div class="loan-interest-warning">
       <p>💸 Total interest you'll pay: <strong>${fmt(calc.totalInterest)}</strong></p>
       <p style="margin-top:4px;">Total cost of this loan: <strong>${fmt(calc.totalPaid)}</strong></p>
+      <p style="margin-top:6px;font-size:11px;color:var(--text-subtle);">Method detected: <strong style="color:var(--text-muted);">${calc.label}</strong></p>
+      ${effectiveNote}
     </div>
+    <!-- Extra payment calculator -->
     <div style="margin-bottom:12px;">
       <label class="form-label">Extra Payment Calculator</label>
       <input type="range" min="0" max="${Math.round(l.monthlyPayment*2)}" step="500" value="0" id="extra_${idx}" oninput="updateLoanCalc(${idx})"/>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);"><span>₱0 extra</span><span id="extraLabel_${idx}">₱0 extra/month</span><span>${fmt(l.monthlyPayment*2)} extra</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);">
+        <span>₱0 extra</span>
+        <span id="extraLabel_${idx}">₱0 extra/month</span>
+        <span>${fmt(l.monthlyPayment*2)} extra</span>
+      </div>
       <div class="calc-box" id="calcResult_${idx}">
-        <div class="calc-result">Paying <strong>${fmt(l.monthlyPayment)}/mo</strong> → payoff in <strong>${calc.monthsToPayoff} months</strong> (${calc.payoffDate})<br/>Total interest: <span class="warning">${fmt(calc.totalInterest)}</span></div>
+        <div class="calc-result">
+          Paying <strong>${fmt(l.monthlyPayment)}/mo</strong> → payoff in <strong>${calc.monthsToPayoff} months</strong> (${calc.payoffDate})<br/>
+          Total interest: <span class="warning">${fmt(calc.totalInterest)}</span>
+        </div>
       </div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -977,14 +1105,18 @@ function updateLoanCalc(idx) {
   const loan=sorted[idx];
   const extra=Number(document.getElementById(`extra_${idx}`).value);
   document.getElementById(`extraLabel_${idx}`).textContent=`${fmt(extra)} extra/month`;
-  const base=calcLoan(loan.currentBalance,loan.interestRate,loan.monthlyPayment,0);
-  const withExtra=calcLoan(loan.currentBalance,loan.interestRate,loan.monthlyPayment,extra);
+  const base=calcLoan(loan.currentBalance,loan.interestRate,loan.monthlyPayment,0,loan.originalAmount);
+  const withExtra=calcLoan(loan.currentBalance,loan.interestRate,loan.monthlyPayment,extra,loan.originalAmount);
   const savedInterest=base.totalInterest-withExtra.totalInterest;
   const savedMonths=base.monthsToPayoff-withExtra.monthsToPayoff;
+  const methodNote=base.method==='addon'
+    ? `<br/><span style="font-size:11px;color:var(--amber);">Add-on rate detected — effective rate ≈${Math.round(Number(loan.interestRate)*1.8)}% p.a.</span>`
+    : '';
   document.getElementById(`calcResult_${idx}`).innerHTML=`<div class="calc-result">
     <strong>Without extra:</strong> ${base.monthsToPayoff} months · ${fmt(base.totalInterest)} interest<br/>
     <strong>With +${fmt(extra)}/mo:</strong> ${withExtra.monthsToPayoff} months · ${fmt(withExtra.totalInterest)} interest<br/>
-    ${savedInterest>0?`<span class="good">✅ Save ${fmt(savedInterest)} and finish ${savedMonths} months earlier!</span>`:''}
+    ${savedInterest>0?`<span class="good">✅ Save ${fmt(savedInterest)} in interest, done ${savedMonths} months earlier!</span>`:''}
+    ${methodNote}
   </div>`;
 }
 
