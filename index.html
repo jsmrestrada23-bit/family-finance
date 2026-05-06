@@ -479,36 +479,70 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <div class="modal">
     <div class="modal-header"><div class="modal-title">🏦 Add Loan / Debt</div><button class="modal-close" onclick="closeModal('loanModal')">✕</button></div>
     <div class="modal-body">
+
+      <!-- Basic Info -->
       <div class="form-row">
         <div class="form-group"><label class="form-label">Loan Name</label><input type="text" class="form-control" id="loan_name" placeholder="e.g. BDO Personal Loan"/></div>
-        <div class="form-group"><label class="form-label">Lender</label><input type="text" class="form-control" id="loan_lender" placeholder="e.g. BDO, BPI"/></div>
+        <div class="form-group"><label class="form-label">Lender</label><input type="text" class="form-control" id="loan_lender" placeholder="e.g. BDO, BPI, SSS"/></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Loan Type</label>
           <select class="form-control" id="loan_type">
-            <option value="Personal">Personal Loan</option><option value="Mortgage">Mortgage / Housing</option>
-            <option value="Car">Car Loan</option><option value="Credit Card">Credit Card</option>
-            <option value="Business">Business Loan</option><option value="SSS">SSS Loan</option>
-            <option value="Pag-IBIG">Pag-IBIG Loan</option><option value="Other">Other</option>
+            <option value="Personal">Personal Loan</option>
+            <option value="Mortgage">Mortgage / Housing</option>
+            <option value="Car">Car Loan</option>
+            <option value="Credit Card">Credit Card</option>
+            <option value="Business">Business Loan</option>
+            <option value="SSS">SSS Loan</option>
+            <option value="Pag-IBIG">Pag-IBIG Loan</option>
+            <option value="Other">Other</option>
           </select>
         </div>
         <div class="form-group"><label class="form-label">Status</label>
-          <select class="form-control" id="loan_status"><option value="Active">Active</option><option value="Paid">Paid Off</option><option value="Deferred">Deferred</option></select>
+          <select class="form-control" id="loan_status">
+            <option value="Active">Active</option>
+            <option value="Paid">Paid Off</option>
+            <option value="Deferred">Deferred</option>
+          </select>
         </div>
       </div>
+
+      <!-- Amounts -->
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Original Amount (₱)</label><input type="number" class="form-control" id="loan_original" placeholder="0.00"/></div>
-        <div class="form-group"><label class="form-label">Current Balance (₱)</label><input type="number" class="form-control" id="loan_balance" placeholder="0.00"/></div>
+        <div class="form-group"><label class="form-label">Original Loan Amount (₱)</label><input type="number" class="form-control" id="loan_original" placeholder="e.g. 300000" oninput="loanAutoCalc()"/></div>
+        <div class="form-group"><label class="form-label">Current Balance (₱)</label><input type="number" class="form-control" id="loan_balance" placeholder="What you still owe" oninput="loanAutoCalc()"/></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Interest Rate (% p.a.)</label><input type="number" class="form-control" id="loan_rate" placeholder="e.g. 12" step="0.01"/></div>
-        <div class="form-group"><label class="form-label">Monthly Payment (₱)</label><input type="number" class="form-control" id="loan_payment" placeholder="0.00"/></div>
+        <div class="form-group"><label class="form-label">Monthly Payment (₱)</label><input type="number" class="form-control" id="loan_payment" placeholder="Your fixed monthly payment" oninput="loanAutoCalc()"/></div>
+        <div class="form-group"><label class="form-label">Months Already Paid</label><input type="number" class="form-control" id="loan_months_paid" placeholder="e.g. 6" min="0" oninput="loanAutoCalc()"/></div>
       </div>
+
+      <!-- Auto-calculated rate display -->
+      <div id="loanRateResult" style="display:none;margin-bottom:16px;">
+        <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;">📊 Auto-Calculated Estimates</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div><div style="font-size:10px;color:var(--text-subtle);">Est. Interest Rate</div><div style="font-size:18px;font-weight:800;color:var(--amber);" id="calcRateDisplay">—</div></div>
+            <div><div style="font-size:10px;color:var(--text-subtle);">Payoff In</div><div style="font-size:18px;font-weight:800;color:#fff;" id="calcMonthsDisplay">—</div></div>
+            <div><div style="font-size:10px;color:var(--text-subtle);">Total Interest</div><div style="font-size:18px;font-weight:800;color:var(--red);" id="calcInterestDisplay">—</div></div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--text-subtle);" id="calcMethodDisplay"></div>
+          <div style="margin-top:6px;font-size:11px;" id="calcConfidenceDisplay"></div>
+        </div>
+      </div>
+
+      <!-- Optional: override rate -->
+      <div class="form-group">
+        <label class="form-label">Interest Rate % p.a. <span style="color:var(--text-subtle);font-weight:400;text-transform:none;letter-spacing:0;">(optional — leave blank to auto-calculate)</span></label>
+        <input type="number" class="form-control" id="loan_rate" placeholder="Only enter if you know it exactly" step="0.01" oninput="loanAutoCalc()"/>
+      </div>
+
+      <!-- Due date & notes -->
       <div class="form-row">
         <div class="form-group"><label class="form-label">Payment Due Day</label><input type="number" class="form-control" id="loan_due" placeholder="e.g. 15" min="1" max="31"/></div>
         <div class="form-group"><label class="form-label">Start Date</label><input type="date" class="form-control" id="loan_start"/></div>
       </div>
-      <div class="form-group"><label class="form-label">Notes</label><input type="text" class="form-control" id="loan_notes" placeholder="Any notes..."/></div>
+      <div class="form-group"><label class="form-label">Notes</label><input type="text" class="form-control" id="loan_notes" placeholder="Any notes about this loan..."/></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('loanModal')">Cancel</button><button class="btn btn-primary" onclick="submitLoan()">Save Loan</button></div>
   </div>
@@ -1193,11 +1227,101 @@ async function submitIncome() {
   if(res?.success){showToast('Income added!');closeModal('incomeModal');document.getElementById('inc_amount').value='';document.getElementById('inc_source').value='';refreshCurrentPage();}
 }
 
+// ══ INTEREST RATE REVERSE-ENGINEER ══
+function reverseEngineerRate(originalAmount, currentBalance, monthlyPayment, monthsPaid) {
+  const orig=Number(originalAmount), bal=Number(currentBalance);
+  const pmt=Number(monthlyPayment),  paid=Number(monthsPaid)||0;
+  if(!orig||!pmt) return null;
+  let bestRate=null, bestDiff=Infinity, bestMethod='diminishing';
+  for(let r=0;r<=72;r+=0.1){
+    const mr=r/100/12;
+    // Diminishing: simulate paid months
+    let rem=orig;
+    for(let m=0;m<paid;m++){
+      const interest=rem*mr;
+      const principal=Math.min(pmt-interest,rem);
+      if(principal<=0) break;
+      rem-=principal;
+    }
+    const dimDiff=Math.abs(rem-bal);
+    if(dimDiff<bestDiff){bestDiff=dimDiff;bestRate=r;bestMethod='diminishing';}
+    // Add-on: fixed interest on original
+    const addOnInterest=orig*mr;
+    const addOnPrincipal=pmt-addOnInterest;
+    if(addOnPrincipal>0){
+      const addOnBal=orig-(addOnPrincipal*paid);
+      const addOnDiff=Math.abs(addOnBal-bal);
+      if(addOnDiff<bestDiff){bestDiff=addOnDiff;bestRate=r;bestMethod='addon';}
+    }
+  }
+  const confidence=bestDiff<bal*0.02?'high':bestDiff<bal*0.08?'medium':'low';
+  return bestRate!==null?{rate:Math.round(bestRate*10)/10,method:bestMethod,confidence,diff:Math.round(bestDiff)}:null;
+}
+
+function loanAutoCalc(){
+  const orig=Number(document.getElementById('loan_original').value)||0;
+  const bal=Number(document.getElementById('loan_balance').value)||0;
+  const pmt=Number(document.getElementById('loan_payment').value)||0;
+  const paid=Number(document.getElementById('loan_months_paid').value)||0;
+  const manualRate=Number(document.getElementById('loan_rate').value)||0;
+  const resultBox=document.getElementById('loanRateResult');
+  if(!orig||!bal||!pmt){resultBox.style.display='none';return;}
+  let rate,method,confidence,rateLabel;
+  if(manualRate>0){
+    rate=manualRate;method='diminishing';confidence='manual';
+    rateLabel=`${rate}% p.a. (entered manually)`;
+  } else {
+    const detected=reverseEngineerRate(orig,bal,pmt,paid);
+    if(!detected){resultBox.style.display='none';return;}
+    rate=detected.rate;method=detected.method;confidence=detected.confidence;
+    rateLabel=`~${rate}% p.a. (auto-detected)`;
+    document.getElementById('loan_rate').dataset.autoRate=rate;
+  }
+  const calc=calcLoan(bal,rate,pmt,0,orig);
+  const effectiveNote=method==='addon'?` — effective rate ≈${Math.round(rate*1.8)}% p.a.`:'';
+  const confidenceColor=confidence==='high'?'var(--green)':confidence==='medium'?'var(--amber)':'var(--red)';
+  const confidenceIcon=confidence==='high'?'🟢':confidence==='medium'?'🟡':'🔴';
+  const confidenceText=confidence==='manual'?''
+    :`${confidenceIcon} Confidence: <strong style="color:${confidenceColor};">${confidence.charAt(0).toUpperCase()+confidence.slice(1)}</strong>`
+    +(confidence==='low'?' — try entering months paid for a better estimate':'');
+  document.getElementById('calcRateDisplay').textContent=rateLabel.split(' ')[0];
+  document.getElementById('calcMonthsDisplay').textContent=calc.monthsToPayoff+' mos';
+  document.getElementById('calcInterestDisplay').textContent=fmt(calc.totalInterest);
+  document.getElementById('calcMethodDisplay').textContent=`Method: ${method==='addon'?'Add-on Rate'+effectiveNote:'Diminishing Balance'}`;
+  document.getElementById('calcConfidenceDisplay').innerHTML=confidenceText;
+  resultBox.style.display='block';
+}
+
 async function submitLoan() {
-  const data={name:document.getElementById('loan_name').value,lender:document.getElementById('loan_lender').value,type:document.getElementById('loan_type').value,originalAmount:document.getElementById('loan_original').value,currentBalance:document.getElementById('loan_balance').value,interestRate:document.getElementById('loan_rate').value,monthlyPayment:document.getElementById('loan_payment').value,dueDay:document.getElementById('loan_due').value,startDate:document.getElementById('loan_start').value,status:document.getElementById('loan_status').value,notes:document.getElementById('loan_notes').value};
-  if(!data.name||!data.currentBalance||!data.monthlyPayment){showToast('Fill in required fields','error');return;}
+  const name=document.getElementById('loan_name').value;
+  const bal=document.getElementById('loan_balance').value;
+  const pmt=document.getElementById('loan_payment').value;
+  if(!name||!bal||!pmt){showToast('Fill in Loan Name, Balance and Monthly Payment','error');return;}
+  const manualRate=Number(document.getElementById('loan_rate').value)||0;
+  const autoRate=Number(document.getElementById('loan_rate').dataset?.autoRate)||0;
+  const finalRate=manualRate>0?manualRate:autoRate;
+  const data={
+    name,
+    lender:document.getElementById('loan_lender').value,
+    type:document.getElementById('loan_type').value,
+    originalAmount:document.getElementById('loan_original').value||bal,
+    currentBalance:bal,
+    interestRate:finalRate,
+    monthlyPayment:pmt,
+    dueDay:document.getElementById('loan_due').value,
+    startDate:document.getElementById('loan_start').value,
+    status:document.getElementById('loan_status').value,
+    notes:document.getElementById('loan_notes').value,
+  };
   const res=await apiPost('addLoan',{data});
-  if(res?.success){showToast('Loan added!');closeModal('loanModal');loadLoans();}
+  if(res?.success){
+    showToast('Loan added!');
+    closeModal('loanModal');
+    ['loan_name','loan_lender','loan_original','loan_balance','loan_payment','loan_months_paid','loan_rate','loan_due','loan_notes']
+      .forEach(id=>{const el=document.getElementById(id);if(el){el.value='';delete el.dataset?.autoRate;}});
+    document.getElementById('loanRateResult').style.display='none';
+    loadLoans();
+  }
 }
 
 async function submitGoal() {
