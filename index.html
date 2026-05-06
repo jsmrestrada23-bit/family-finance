@@ -378,7 +378,37 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div class="card"><div class="card-title">Active Loans</div><div class="card-value" id="loanCount">0</div></div>
       <div class="card"><div class="card-title">Total Lifetime Interest</div><div class="card-value amount-negative" id="loanTotalInterest">₱0</div><div class="card-sub">Cost of borrowing</div></div>
     </div>
+    <!-- Owner split summary -->
+    <div id="ownerSummary" style="display:none;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div class="card" style="border-left:3px solid var(--blue);">
+          <div class="card-title">👤 Jesse</div>
+          <div style="font-size:18px;font-weight:800;color:var(--red);" id="jesseDebt">₱0</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="jesseMonthly"></div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--purple);">
+          <div class="card-title">👤 Veron</div>
+          <div style="font-size:18px;font-weight:800;color:var(--red);" id="veronDebt">₱0</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="veronMonthly"></div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--teal);">
+          <div class="card-title">👥 Joint</div>
+          <div style="font-size:18px;font-weight:800;color:var(--red);" id="jointDebt">₱0</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="jointMonthly"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Active loans -->
     <div id="loanCards"><div class="loader"><div class="spinner"></div> Loading loans...</div></div>
+    <!-- Paid off loans -->
+    <div id="paidLoansSection" style="display:none;margin-top:28px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;" onclick="togglePaidLoans()">
+        <div style="font-size:14px;font-weight:700;color:var(--text-muted);">✅ Paid Off Loans</div>
+        <span class="badge badge-green" id="paidLoanCount">0</span>
+        <span style="font-size:12px;color:var(--text-subtle);" id="paidLoansToggleLabel">▼ Show</span>
+      </div>
+      <div id="paidLoanCards" style="display:none;"></div>
+    </div>
   </div>
 
   <!-- GOALS -->
@@ -485,6 +515,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div class="form-group"><label class="form-label">Loan Name</label><input type="text" class="form-control" id="loan_name" placeholder="e.g. BDO Personal Loan"/></div>
         <div class="form-group"><label class="form-label">Lender</label><input type="text" class="form-control" id="loan_lender" placeholder="e.g. BDO, BPI, SSS"/></div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Whose Loan?</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <label style="cursor:pointer;">
+            <input type="radio" name="loan_owner" value="Jesse" style="display:none;" onchange="updateOwnerUI()" checked/>
+            <div class="owner-btn" id="ownerBtn_Jesse" style="text-align:center;padding:10px;border-radius:8px;border:2px solid var(--blue);background:rgba(59,130,246,0.15);color:var(--blue);font-size:13px;font-weight:700;">👤 Jesse</div>
+          </label>
+          <label style="cursor:pointer;">
+            <input type="radio" name="loan_owner" value="Veron" style="display:none;" onchange="updateOwnerUI()"/>
+            <div class="owner-btn" id="ownerBtn_Veron" style="text-align:center;padding:10px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-size:13px;font-weight:700;">👤 Veron</div>
+          </label>
+          <label style="cursor:pointer;">
+            <input type="radio" name="loan_owner" value="Joint" style="display:none;" onchange="updateOwnerUI()"/>
+            <div class="owner-btn" id="ownerBtn_Joint" style="text-align:center;padding:10px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-size:13px;font-weight:700;">👥 Joint</div>
+          </label>
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Loan Type</label>
           <select class="form-control" id="loan_type">
@@ -580,6 +627,48 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   </div>
 </div>
 
+<!-- Record Payment Modal -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">💳 Record Payment</div>
+      <button class="modal-close" onclick="closeModal('paymentModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="paymentLoanName" style="font-size:15px;font-weight:700;color:#fff;margin-bottom:4px;"></div>
+      <div id="paymentLoanBalance" style="font-size:13px;color:var(--text-muted);margin-bottom:20px;"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Payment Amount (₱)</label>
+          <input type="number" class="form-control" id="payment_amount" placeholder="e.g. 3473.17" step="0.01"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Date</label>
+          <input type="date" class="form-control" id="payment_date"/>
+        </div>
+      </div>
+      <!-- Quick fill buttons -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Quick Fill</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="fillPayment('regular')">Regular Payment</button>
+          <button class="btn btn-ghost btn-sm" onclick="fillPayment('full')">Pay Full Balance</button>
+        </div>
+      </div>
+      <!-- New balance preview -->
+      <div id="newBalancePreview" style="display:none;background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 14px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">New Balance After Payment</div>
+        <div style="font-size:20px;font-weight:800;color:var(--green);" id="newBalanceAmount">₱0</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="newBalanceNote"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('paymentModal')">Cancel</button>
+      <button class="btn btn-success" onclick="submitPayment()">Record Payment</button>
+    </div>
+  </div>
+</div>
+
 <!-- Category -->
 <div class="modal-overlay" id="categoryModal">
   <div class="modal">
@@ -620,6 +709,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('pinScreen').classList.add('hidden');
     initApp();
   }
+  // Wire payment amount live preview
+  const amtEl = document.getElementById('payment_amount');
+  if(amtEl) amtEl.addEventListener('input', previewNewBalance);
   // else PIN screen shows by default
 });
 
@@ -939,22 +1031,69 @@ async function saveBudget() {
   if(res?.success){showToast('Budget saved!');loadBudget();}
 }
 
+function getLoanOwner(l){
+  const notes=l.notes||'';
+  const m=notes.match(/owner:(Jesse|Veron|Joint)/);
+  return m?m[1]:'Jesse'; // default Jesse for old loans
+}
+
 async function loadLoans() {
   const loans=await apiGet('getLoans');
   if(!loans) return;
   state.loans=loans;
   const active=loans.filter(l=>l.status!=='Paid');
+  const paid=loans.filter(l=>l.status==='Paid');
   const totalDebt=active.reduce((s,l)=>s+Number(l.currentBalance),0);
   const monthlyObl=active.reduce((s,l)=>s+Number(l.monthlyPayment),0);
   document.getElementById('loanTotalDebt').textContent=fmt(totalDebt);
   document.getElementById('loanMonthlyObl').textContent=fmt(monthlyObl);
   document.getElementById('loanCount').textContent=active.length;
   let totalInterest=0;
-  active.forEach(l=>{const c=calcLoan(l.currentBalance,l.interestRate,l.monthlyPayment,0);totalInterest+=c.totalInterest;});
+  active.forEach(l=>{const c=calcLoan(l.currentBalance,l.interestRate,l.monthlyPayment,0,l.originalAmount);totalInterest+=c.totalInterest;});
   document.getElementById('loanTotalInterest').textContent=fmt(totalInterest);
-  if(!loans.length){document.getElementById('loanCards').innerHTML='<div class="empty-state"><div class="empty-icon">🏦</div><p>No loans added yet.</p></div>';return;}
-  const sorted=[...loans].sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
-  document.getElementById('loanCards').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${sorted.map((l,i)=>renderLoanCard(l,i)).join('')}</div>`;
+
+  // Owner split summary
+  const owners=['Jesse','Veron','Joint'];
+  const hasOwnerData=loans.some(l=>(l.notes||'').includes('owner:'));
+  if(hasOwnerData){
+    document.getElementById('ownerSummary').style.display='block';
+    owners.forEach(o=>{
+      const oLoans=active.filter(l=>getLoanOwner(l)===o);
+      const oDebt=oLoans.reduce((s,l)=>s+Number(l.currentBalance),0);
+      const oMonthly=oLoans.reduce((s,l)=>s+Number(l.monthlyPayment),0);
+      document.getElementById(o.toLowerCase()+'Debt').textContent=fmt(oDebt);
+      document.getElementById(o.toLowerCase()+'Monthly').textContent=oLoans.length?`${fmt(oMonthly)}/mo · ${oLoans.length} loan${oLoans.length!==1?'s':''}`:'No active loans';
+    });
+  }
+
+  if(!loans.length){
+    document.getElementById('loanCards').innerHTML='<div class="empty-state"><div class="empty-icon">🏦</div><p>No loans added yet.</p></div>';
+    return;
+  }
+
+  // Active loans sorted by interest rate (highest first)
+  const sorted=[...active].sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
+  document.getElementById('loanCards').innerHTML=sorted.length
+    ?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${sorted.map((l,i)=>renderLoanCard(l,i,false)).join('')}</div>`
+    :'<div class="empty-state"><div class="empty-icon">🎉</div><p>All loans paid off! Amazing work.</p></div>';
+
+  // Paid off loans
+  if(paid.length){
+    document.getElementById('paidLoansSection').style.display='block';
+    document.getElementById('paidLoanCount').textContent=paid.length;
+    document.getElementById('paidLoanCards').innerHTML=
+      `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${paid.map((l,i)=>renderLoanCard(l,i,true)).join('')}</div>`;
+  } else {
+    document.getElementById('paidLoansSection').style.display='none';
+  }
+}
+
+function togglePaidLoans(){
+  const el=document.getElementById('paidLoanCards');
+  const label=document.getElementById('paidLoansToggleLabel');
+  const hidden=el.style.display==='none';
+  el.style.display=hidden?'block':'none';
+  label.textContent=hidden?'▲ Hide':'▼ Show';
 }
 
 // ══ SMART LOAN ENGINE ══
@@ -1084,7 +1223,7 @@ function calcLoan(balance, annualRate, monthlyPayment, extra, originalAmount) {
   return result;
 }
 
-function renderLoanCard(l,idx) {
+function renderLoanCard(l,idx,isPaid) {
   // Read stored method tag and term from notes field
   const notes   = l.notes||'';
   const isAddon = notes.includes('[addon]');
@@ -1115,17 +1254,37 @@ function renderLoanCard(l,idx) {
 
   const paidPct=l.originalAmount>0?pct(l.originalAmount-l.currentBalance,l.originalAmount):0;
   const typeColors={Personal:'badge-blue',Mortgage:'badge-green',Car:'badge-amber','Credit Card':'badge-red',SSS:'badge-purple','Pag-IBIG':'badge-blue'};
-  // Effective rate note for add-on loans
-  const effectiveNote = calc.method==='addon'
-    ? `<div style="font-size:11px;color:var(--amber);margin-top:4px;">⚠️ Effective rate ≈ ${Math.round(Number(l.interestRate)*1.8)}% p.a. (add-on method detected)</div>`
-    : '';
+  const owner=getLoanOwner(l);
+  const ownerColor=owner==='Jesse'?'var(--blue)':owner==='Veron'?'var(--purple)':'var(--teal)';
+  const ownerBg=owner==='Jesse'?'rgba(59,130,246,0.12)':owner==='Veron'?'rgba(139,92,246,0.12)':'rgba(20,184,166,0.12)';
+  const effectiveNote=calc.method==='addon'
+    ?`<p style="margin-top:4px;font-size:11px;color:var(--amber);">⚠️ Effective rate ≈ ${Math.round(Number(l.interestRate)*1.8)}% p.a.</p>`
+    :'';
+
+  // Paid off card — compact
+  if(isPaid){
+    return `<div class="loan-card" style="opacity:0.7;border-color:rgba(34,197,94,0.3);">
+      <div class="loan-header">
+        <div>
+          <div class="loan-name">${l.name}</div>
+          <div class="loan-lender">${l.lender}</div>
+        </div>
+        <span class="badge badge-green">✅ Paid Off</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);">Original: ${fmt(l.originalAmount)} · ${l.type}</div>
+    </div>`;
+  }
+
   return `<div class="loan-card">
     <div class="loan-header">
       <div>
         <div class="loan-name">${l.name}</div>
         <div class="loan-lender">${l.lender} · Due day ${l.dueDay||'—'}</div>
       </div>
-      <span class="badge ${typeColors[l.type]||'badge-blue'}">${l.type}</span>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <span class="badge ${typeColors[l.type]||'badge-blue'}">${l.type}</span>
+        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${ownerBg};color:${ownerColor};">👤 ${owner}</span>
+      </div>
     </div>
     <div class="loan-stats">
       <div><div class="loan-stat-label">Current Balance</div><div class="loan-stat-value" style="color:var(--red);">${fmt(l.currentBalance)}</div></div>
@@ -1133,7 +1292,6 @@ function renderLoanCard(l,idx) {
       <div><div class="loan-stat-label">Interest Rate</div><div class="loan-stat-value" style="color:var(--amber);">${l.interestRate}% p.a.</div></div>
       <div><div class="loan-stat-label">Payoff Date</div><div class="loan-stat-value" style="font-size:13px;">${calc.payoffDate}</div></div>
     </div>
-    <!-- Paid off progress -->
     <div style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
         <span style="font-size:11px;color:var(--text-muted);">Paid off</span>
@@ -1141,32 +1299,25 @@ function renderLoanCard(l,idx) {
       </div>
       <div class="progress-wrap"><div class="progress-bar progress-green" style="width:${paidPct}%;"></div></div>
     </div>
-    <!-- Interest warning -->
     <div class="loan-interest-warning">
       <p>💸 Total interest you'll pay: <strong>${fmt(calc.totalInterest)}</strong></p>
       <p style="margin-top:4px;">Total cost of this loan: <strong>${fmt(calc.totalPaid)}</strong></p>
-      <p style="margin-top:6px;font-size:11px;color:var(--text-subtle);">Method detected: <strong style="color:var(--text-muted);">${calc.label}</strong></p>
+      <p style="margin-top:6px;font-size:11px;color:var(--text-subtle);">Method: <strong style="color:var(--text-muted);">${calc.label}</strong></p>
       ${effectiveNote}
     </div>
-    <!-- Extra payment calculator -->
     <div style="margin-bottom:12px;">
       <label class="form-label">Extra Payment Calculator</label>
       <input type="range" min="0" max="${Math.round(l.monthlyPayment*2)}" step="500" value="0" id="extra_${idx}" oninput="updateLoanCalc(${idx})"/>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);">
-        <span>₱0 extra</span>
-        <span id="extraLabel_${idx}">₱0 extra/month</span>
-        <span>${fmt(l.monthlyPayment*2)} extra</span>
+        <span>₱0 extra</span><span id="extraLabel_${idx}">₱0 extra/month</span><span>${fmt(l.monthlyPayment*2)} extra</span>
       </div>
       <div class="calc-box" id="calcResult_${idx}">
-        <div class="calc-result">
-          Paying <strong>${fmt(l.monthlyPayment)}/mo</strong> → payoff in <strong>${calc.monthsToPayoff} months</strong> (${calc.payoffDate})<br/>
-          Total interest: <span class="warning">${fmt(calc.totalInterest)}</span>
-        </div>
+        <div class="calc-result">Paying <strong>${fmt(l.monthlyPayment)}/mo</strong> → payoff in <strong>${calc.monthsToPayoff} months</strong> (${calc.payoffDate})<br/>Total interest: <span class="warning">${fmt(calc.totalInterest)}</span></div>
       </div>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-ghost btn-sm" onclick="updateLoanBalancePrompt(${idx})">Update Balance</button>
-      ${l.status==='Paid'?'<span class="badge badge-green">✅ Paid Off</span>':''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-success btn-sm" onclick="openPaymentModal(${idx})">💳 Record Payment</button>
+      <button class="btn btn-ghost btn-sm" onclick="markLoanPaid(${idx})">✅ Mark Paid Off</button>
     </div>
   </div>`;
 }
@@ -1191,15 +1342,78 @@ function updateLoanCalc(idx) {
   </div>`;
 }
 
-async function updateLoanBalancePrompt(idx) {
-  const sorted=[...state.loans].sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
-  const loan=sorted[idx];
-  const newBal=prompt(`Update balance for "${loan.name}"\nCurrent: ${fmt(loan.currentBalance)}\n\nNew balance (₱):`);
-  if(newBal===null) return;
-  const val=Number(newBal);
-  if(isNaN(val)||val<0){showToast('Invalid amount','error');return;}
-  const res=await apiPost('updateLoanBalance',{rowIndex:loan.rowIndex,newBalance:val});
-  if(res?.success){showToast('Balance updated!');loadLoans();}
+// ── OWNER UI ──
+function updateOwnerUI(){
+  ['Jesse','Veron','Joint'].forEach(o=>{
+    const btn=document.getElementById('ownerBtn_'+o);
+    const radio=document.querySelector(`input[name="loan_owner"][value="${o}"]`);
+    if(!btn||!radio) return;
+    const color=o==='Jesse'?'var(--blue)':o==='Veron'?'var(--purple)':'var(--teal)';
+    const bg=o==='Jesse'?'rgba(59,130,246,0.15)':o==='Veron'?'rgba(139,92,246,0.15)':'rgba(20,184,166,0.15)';
+    if(radio.checked){btn.style.border=`2px solid ${color}`;btn.style.background=bg;btn.style.color=color;}
+    else{btn.style.border='2px solid var(--border)';btn.style.background='transparent';btn.style.color='var(--text-muted)';}
+  });
+}
+
+// ── PAYMENT MODAL ──
+let activePaymentLoanIdx=null;
+
+function openPaymentModal(idx){
+  const active=[...state.loans].filter(l=>l.status!=='Paid').sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
+  const loan=active[idx];
+  activePaymentLoanIdx=idx;
+  document.getElementById('paymentLoanName').textContent=loan.name;
+  document.getElementById('paymentLoanBalance').textContent=`Current Balance: ${fmt(loan.currentBalance)} · Monthly: ${fmt(loan.monthlyPayment)}`;
+  const amtEl=document.getElementById('payment_amount');
+  amtEl.value='';
+  amtEl.dataset.regularPayment=loan.monthlyPayment;
+  amtEl.dataset.fullBalance=loan.currentBalance;
+  document.getElementById('payment_date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('newBalancePreview').style.display='none';
+  openModal('paymentModal');
+}
+
+function fillPayment(type){
+  const el=document.getElementById('payment_amount');
+  if(type==='regular') el.value=Number(el.dataset.regularPayment).toFixed(2);
+  if(type==='full')    el.value=Number(el.dataset.fullBalance).toFixed(2);
+  previewNewBalance();
+}
+
+function previewNewBalance(){
+  const active=[...state.loans].filter(l=>l.status!=='Paid').sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
+  const loan=active[activePaymentLoanIdx];
+  const amount=Number(document.getElementById('payment_amount').value)||0;
+  if(!amount||!loan) return;
+  const newBal=Math.max(0,Number(loan.currentBalance)-amount);
+  document.getElementById('newBalanceAmount').textContent=fmt(newBal);
+  const noteEl=document.getElementById('newBalanceNote');
+  if(newBal===0) noteEl.innerHTML='<span style="color:var(--green);font-weight:700;">🎉 This loan will be fully paid off!</span>';
+  else noteEl.textContent=`${fmt(amount)} payment · ${fmt(newBal)} remaining`;
+  document.getElementById('newBalancePreview').style.display='block';
+}
+
+async function submitPayment(){
+  const active=[...state.loans].filter(l=>l.status!=='Paid').sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
+  const loan=active[activePaymentLoanIdx];
+  const amount=Number(document.getElementById('payment_amount').value);
+  if(!amount||amount<=0){showToast('Enter a payment amount','error');return;}
+  const newBal=Math.max(0,Number(loan.currentBalance)-amount);
+  const isFullyPaid=newBal===0;
+  const res=await apiPost('updateLoanBalance',{rowIndex:loan.rowIndex,newBalance:newBal});
+  if(!res?.success){showToast('Error recording payment','error');return;}
+  if(isFullyPaid) await apiPost('markLoanPaid',{rowIndex:loan.rowIndex});
+  closeModal('paymentModal');
+  showToast(isFullyPaid?'🎉 Loan fully paid off! Amazing!':`Payment of ${fmt(amount)} recorded!`);
+  loadLoans();
+}
+
+async function markLoanPaid(idx){
+  const active=[...state.loans].filter(l=>l.status!=='Paid').sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
+  const loan=active[idx];
+  if(!confirm(`Mark "${loan.name}" as fully paid off?`)) return;
+  const res=await apiPost('markLoanPaid',{rowIndex:loan.rowIndex});
+  if(res?.success){showToast('🎉 Loan marked as paid off!');loadLoans();}
 }
 
 async function loadGoals() {
@@ -1475,6 +1689,8 @@ async function submitLoan() {
   // Store method in notes if add-on so loan card can use it
   const baseNotes   = document.getElementById('loan_notes').value;
   const methodTag   = (!manualRate && autoMethod==='addon') ? '[addon]' : '';
+  const ownerRadio  = document.querySelector('input[name="loan_owner"]:checked');
+  const ownerTag    = ownerRadio ? `owner:${ownerRadio.value}` : 'owner:Jesse';
   const data={
     name,
     lender:       document.getElementById('loan_lender').value,
@@ -1486,7 +1702,7 @@ async function submitLoan() {
     dueDay:       document.getElementById('loan_due').value,
     startDate:    document.getElementById('loan_start').value,
     status:       document.getElementById('loan_status').value,
-    notes:        [methodTag, term?`term:${term}`:'', monthsPaid?`paid:${monthsPaid}`:'', baseNotes].filter(Boolean).join(' | '),
+    notes:        [methodTag, ownerTag, term?`term:${term}`:'', monthsPaid?`paid:${monthsPaid}`:'', baseNotes].filter(Boolean).join(' | '),
   };
   const res=await apiPost('addLoan',{data});
   if(res?.success){
@@ -1495,6 +1711,9 @@ async function submitLoan() {
     ['loan_name','loan_lender','loan_original','loan_balance','loan_payment',
      'loan_months_paid','loan_term','loan_rate','loan_due','loan_notes']
       .forEach(id=>{const el=document.getElementById(id);if(el){el.value='';if(el.dataset)delete el.dataset.autoRate;if(el.dataset)delete el.dataset.autoMethod;}});
+    // Reset owner to Jesse
+    const jesseRadio=document.querySelector('input[name="loan_owner"][value="Jesse"]');
+    if(jesseRadio){jesseRadio.checked=true;updateOwnerUI();}
     document.getElementById('loanRateResult').style.display='none';
     loadLoans();
   }
