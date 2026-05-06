@@ -510,16 +510,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <!-- Amounts -->
       <div class="form-row">
         <div class="form-group"><label class="form-label">Original Loan Amount (₱)</label><input type="number" class="form-control" id="loan_original" placeholder="e.g. 35000" oninput="loanAutoCalc()"/></div>
-        <div class="form-group"><label class="form-label">Current Balance (₱)</label><input type="number" class="form-control" id="loan_balance" placeholder="What you still owe" oninput="loanAutoCalc()"/></div>
+        <div class="form-group"><label class="form-label">Monthly Payment (₱)</label><input type="number" class="form-control" id="loan_payment" placeholder="e.g. 3473.17" oninput="loanAutoCalc()"/></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Monthly Payment (₱)</label><input type="number" class="form-control" id="loan_payment" placeholder="Your fixed monthly payment" oninput="loanAutoCalc()"/></div>
         <div class="form-group"><label class="form-label">Loan Term (total months)</label><input type="number" class="form-control" id="loan_term" placeholder="e.g. 12, 24, 36" min="1" oninput="loanAutoCalc()"/></div>
-      </div>
-      <div class="form-row">
         <div class="form-group"><label class="form-label">Months Already Paid</label><input type="number" class="form-control" id="loan_months_paid" placeholder="e.g. 3" min="0" oninput="loanAutoCalc()"/></div>
-        <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:2px;"><div style="font-size:12px;color:var(--text-subtle);line-height:1.5;">💡 Term + Months Paid gives the most accurate calculation</div></div>
       </div>
+      <!-- Auto-computed balance display -->
+      <div id="balanceComputedRow" style="display:none;margin-bottom:16px;">
+        <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:12px;color:var(--text-muted);">Current Balance (auto-computed)</span>
+          <span style="font-size:16px;font-weight:800;color:var(--green);" id="balanceComputedDisplay">₱0</span>
+        </div>
+      </div>
+      <!-- Hidden balance field — filled by loanAutoCalc -->
+      <input type="hidden" id="loan_balance" value="0"/>
 
       <!-- Auto-calculated rate display -->
       <div id="loanRateResult" style="display:none;margin-bottom:16px;">
@@ -1358,12 +1363,48 @@ function loanAutoCalc(){
   const manualRate = Number(document.getElementById('loan_rate').value)||0;
   const resultBox  = document.getElementById('loanRateResult');
 
-  if(!orig||!bal||!pmt){resultBox.style.display='none';return;}
+  if(!orig||!pmt){resultBox.style.display='none';return;}
 
-  let rate,method,confidence,totalInterest,totalCost,remainingMonths,estBalance;
+  // ── AUTO-COMPUTE CURRENT BALANCE ──
+  let computedBalance = 0;
+  if(term>0 && paid>=0){
+    // Add-on: balance = payment × remaining months
+    // Diminishing: simulate payments from original
+    // Try add-on first (most common for fixed-term PH loans)
+    const remainingMonthsEst = term - paid;
+    const addOnBalance = pmt * remainingMonthsEst;
+    // Diminishing simulation
+    let dimBal = orig;
+    const trialRate = manualRate>0 ? manualRate/100/12 : 0.02; // rough estimate
+    for(let m=0;m<paid;m++){
+      const interest = dimBal * trialRate;
+      const principal = Math.min(pmt - interest, dimBal);
+      if(principal<=0) break;
+      dimBal -= principal;
+    }
+    // Use add-on balance as default for fixed-term; will be refined after detection
+    computedBalance = addOnBalance > 0 ? addOnBalance : dimBal;
+  } else if(paid===0){
+    computedBalance = orig;
+  } else {
+    computedBalance = orig; // fallback
+  }
+
+  // Update hidden field and display
+  document.getElementById('loan_balance').value = Math.round(computedBalance);
+  const balRow = document.getElementById('balanceComputedRow');
+  const balDisplay = document.getElementById('balanceComputedDisplay');
+  if(term>0 && paid>=0 && orig && pmt){
+    balDisplay.textContent = fmt(Math.round(computedBalance));
+    balRow.style.display = 'block';
+  } else {
+    balRow.style.display = 'none';
+  }
+
+  const bal = computedBalance;
+  let rate,method,confidence,totalInterest,totalCost,remainingMonths;
 
   if(manualRate>0){
-    // Manual override
     rate=manualRate; method='diminishing'; confidence='manual';
     const calc=calcLoan(bal,rate,pmt,0,orig);
     totalInterest=calc.totalInterest;
@@ -1377,11 +1418,13 @@ function loanAutoCalc(){
     document.getElementById('loan_rate').dataset.autoMethod=method;
 
     if(term>0 && method==='addon' && detected.totalInterest!=null){
-      // Exact figures from term-based calculation
-      totalInterest = detected.totalInterest;
-      totalCost     = detected.totalCost;
+      totalInterest   = detected.totalInterest;
+      totalCost       = detected.totalCost;
       remainingMonths = detected.remainingMonths;
-      estBalance    = detected.estBalance;
+      // Refine balance using exact add-on method
+      const exactBalance = pmt * remainingMonths;
+      document.getElementById('loan_balance').value = Math.round(exactBalance);
+      if(balDisplay) balDisplay.textContent = fmt(Math.round(exactBalance));
     } else {
       const calc=calcLoan(bal,rate,pmt,0,orig);
       totalInterest=calc.totalInterest;
@@ -1414,10 +1457,16 @@ function loanAutoCalc(){
 }
 
 async function submitLoan() {
-  const name=document.getElementById('loan_name').value;
-  const bal=document.getElementById('loan_balance').value;
-  const pmt=document.getElementById('loan_payment').value;
-  if(!name||!bal||!pmt){showToast('Fill in Loan Name, Balance and Monthly Payment','error');return;}
+  const name = document.getElementById('loan_name').value;
+  const pmt  = document.getElementById('loan_payment').value;
+  const orig = document.getElementById('loan_original').value;
+  const term = document.getElementById('loan_term').value;
+  // Balance is auto-computed by loanAutoCalc into the hidden field
+  const bal  = document.getElementById('loan_balance').value || orig;
+  if(!name||!orig||!pmt||!term){
+    showToast('Fill in Loan Name, Original Amount, Monthly Payment and Term','error');
+    return;
+  }
   const manualRate  = Number(document.getElementById('loan_rate').value)||0;
   const rateEl      = document.getElementById('loan_rate');
   const autoRate    = Number(rateEl.dataset?.autoRate)||0;
