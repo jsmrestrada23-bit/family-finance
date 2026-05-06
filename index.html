@@ -509,12 +509,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
       <!-- Amounts -->
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Original Loan Amount (₱)</label><input type="number" class="form-control" id="loan_original" placeholder="e.g. 300000" oninput="loanAutoCalc()"/></div>
+        <div class="form-group"><label class="form-label">Original Loan Amount (₱)</label><input type="number" class="form-control" id="loan_original" placeholder="e.g. 35000" oninput="loanAutoCalc()"/></div>
         <div class="form-group"><label class="form-label">Current Balance (₱)</label><input type="number" class="form-control" id="loan_balance" placeholder="What you still owe" oninput="loanAutoCalc()"/></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Monthly Payment (₱)</label><input type="number" class="form-control" id="loan_payment" placeholder="Your fixed monthly payment" oninput="loanAutoCalc()"/></div>
-        <div class="form-group"><label class="form-label">Months Already Paid</label><input type="number" class="form-control" id="loan_months_paid" placeholder="e.g. 6" min="0" oninput="loanAutoCalc()"/></div>
+        <div class="form-group"><label class="form-label">Loan Term (total months)</label><input type="number" class="form-control" id="loan_term" placeholder="e.g. 12, 24, 36" min="1" oninput="loanAutoCalc()"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Months Already Paid</label><input type="number" class="form-control" id="loan_months_paid" placeholder="e.g. 3" min="0" oninput="loanAutoCalc()"/></div>
+        <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:2px;"><div style="font-size:12px;color:var(--text-subtle);line-height:1.5;">💡 Term + Months Paid gives the most accurate calculation</div></div>
       </div>
 
       <!-- Auto-calculated rate display -->
@@ -527,6 +531,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
             <div><div style="font-size:10px;color:var(--text-subtle);">Total Interest</div><div style="font-size:18px;font-weight:800;color:var(--red);" id="calcInterestDisplay">—</div></div>
           </div>
           <div style="margin-top:10px;font-size:11px;color:var(--text-subtle);" id="calcMethodDisplay"></div>
+          <div style="margin-top:4px;font-size:12px;color:var(--text-muted);" id="calcTotalCost"></div>
           <div style="margin-top:6px;font-size:11px;" id="calcConfidenceDisplay"></div>
         </div>
       </div>
@@ -1075,7 +1080,34 @@ function calcLoan(balance, annualRate, monthlyPayment, extra, originalAmount) {
 }
 
 function renderLoanCard(l,idx) {
-  const calc=calcLoan(l.currentBalance,l.interestRate,l.monthlyPayment,0,l.originalAmount);
+  // Read stored method tag and term from notes field
+  const notes   = l.notes||'';
+  const isAddon = notes.includes('[addon]');
+  const termMatch = notes.match(/term:(\d+)/);
+  const paidMatch = notes.match(/paid:(\d+)/);
+  const storedTerm = termMatch ? Number(termMatch[1]) : 0;
+  const storedPaid = paidMatch ? Number(paidMatch[1]) : 0;
+
+  // If we have term, compute exact figures directly
+  let calc;
+  if(storedTerm>0 && isAddon){
+    const totalInterest = (l.monthlyPayment * storedTerm) - l.originalAmount;
+    const remainingMonths = storedTerm - storedPaid;
+    const totalPaid = l.monthlyPayment * storedTerm;
+    const addOnRate = totalInterest>0 ? Math.round((totalInterest/(l.originalAmount*(storedTerm/12)))*1000)/10 : l.interestRate;
+    calc = {
+      monthsToPayoff: remainingMonths,
+      totalInterest:  Math.round(totalInterest),
+      totalPaid:      Math.round(totalPaid),
+      payoffDate:     payoffDateStr(remainingMonths),
+      method:         'addon',
+      label:          'Add-on Rate (fixed term)',
+    };
+  } else {
+    calc = calcLoan(l.currentBalance, l.interestRate, l.monthlyPayment, 0, l.originalAmount);
+    if(isAddon) calc.method='addon';
+  }
+
   const paidPct=l.originalAmount>0?pct(l.originalAmount-l.currentBalance,l.originalAmount):0;
   const typeColors={Personal:'badge-blue',Mortgage:'badge-green',Car:'badge-amber','Credit Card':'badge-red',SSS:'badge-purple','Pag-IBIG':'badge-blue'};
   // Effective rate note for add-on loans
@@ -1228,14 +1260,73 @@ async function submitIncome() {
 }
 
 // ══ INTEREST RATE REVERSE-ENGINEER ══
-function reverseEngineerRate(originalAmount, currentBalance, monthlyPayment, monthsPaid) {
-  const orig=Number(originalAmount), bal=Number(currentBalance);
-  const pmt=Number(monthlyPayment),  paid=Number(monthsPaid)||0;
+// ══ SMART RATE DETECTOR v2 ══
+// Priority: if term is known, use exact formula first.
+// Then try add-on vs diminishing, pick closest match.
+function reverseEngineerRate(orig, bal, pmt, paid, term) {
+  orig=Number(orig); bal=Number(bal);
+  pmt=Number(pmt);   paid=Number(paid)||0;
+  term=Number(term)||0;
+
   if(!orig||!pmt) return null;
-  let bestRate=null, bestDiff=Infinity, bestMethod='diminishing';
+
+  // ── PATH 1: Term is known — most accurate ──
+  // Add-on: total interest = pmt*term - orig
+  // Rate = total_interest / (orig * years)
+  if(term>0){
+    const totalInterest = (pmt*term) - orig;
+    if(totalInterest>=0){
+      const years = term/12;
+      const addOnRate = (totalInterest/(orig*years))*100;
+      // Verify: does add-on produce the right balance after paid months?
+      const addOnPrincipalPerMonth = orig/term;
+      const addOnInterestPerMonth  = orig*(addOnRate/100)/12;
+      const addOnCheckPmt = addOnPrincipalPerMonth + addOnInterestPerMonth;
+      const addOnDiff = Math.abs(addOnCheckPmt - pmt);
+
+      // Also check diminishing balance at this term
+      let bestDimRate=0, bestDimDiff=Infinity;
+      for(let r=0;r<=72;r+=0.05){
+        const mr=r/100/12;
+        const expected = mr===0 ? orig/term
+          : orig*mr*Math.pow(1+mr,term)/(Math.pow(1+mr,term)-1);
+        const d=Math.abs(expected-pmt);
+        if(d<bestDimDiff){bestDimDiff=d;bestDimRate=r;}
+      }
+
+      // Pick the method whose expected payment is closer to actual
+      if(addOnDiff<=bestDimDiff){
+        // Add-on wins
+        const remainingMonths = term - paid;
+        const estBalance = addOnPrincipalPerMonth*remainingMonths + addOnInterestPerMonth*remainingMonths;
+        return{
+          rate:Math.round(addOnRate*10)/10,
+          method:'addon',
+          confidence:'high',
+          totalInterest:Math.round(totalInterest),
+          totalCost:Math.round(pmt*term),
+          remainingMonths,
+          estBalance:Math.round(pmt*remainingMonths),
+          term
+        };
+      } else {
+        // Diminishing wins
+        return{
+          rate:Math.round(bestDimRate*10)/10,
+          method:'diminishing',
+          confidence:'high',
+          totalInterest:null, // let calcLoan handle
+          term
+        };
+      }
+    }
+  }
+
+  // ── PATH 2: No term — reverse-engineer from balance change ──
+  let bestRate=null,bestDiff=Infinity,bestMethod='diminishing';
   for(let r=0;r<=72;r+=0.1){
     const mr=r/100/12;
-    // Diminishing: simulate paid months
+    // Diminishing
     let rem=orig;
     for(let m=0;m<paid;m++){
       const interest=rem*mr;
@@ -1245,7 +1336,7 @@ function reverseEngineerRate(originalAmount, currentBalance, monthlyPayment, mon
     }
     const dimDiff=Math.abs(rem-bal);
     if(dimDiff<bestDiff){bestDiff=dimDiff;bestRate=r;bestMethod='diminishing';}
-    // Add-on: fixed interest on original
+    // Add-on
     const addOnInterest=orig*mr;
     const addOnPrincipal=pmt-addOnInterest;
     if(addOnPrincipal>0){
@@ -1259,36 +1350,66 @@ function reverseEngineerRate(originalAmount, currentBalance, monthlyPayment, mon
 }
 
 function loanAutoCalc(){
-  const orig=Number(document.getElementById('loan_original').value)||0;
-  const bal=Number(document.getElementById('loan_balance').value)||0;
-  const pmt=Number(document.getElementById('loan_payment').value)||0;
-  const paid=Number(document.getElementById('loan_months_paid').value)||0;
-  const manualRate=Number(document.getElementById('loan_rate').value)||0;
-  const resultBox=document.getElementById('loanRateResult');
+  const orig  = Number(document.getElementById('loan_original').value)||0;
+  const bal   = Number(document.getElementById('loan_balance').value)||0;
+  const pmt   = Number(document.getElementById('loan_payment').value)||0;
+  const paid  = Number(document.getElementById('loan_months_paid').value)||0;
+  const term  = Number(document.getElementById('loan_term').value)||0;
+  const manualRate = Number(document.getElementById('loan_rate').value)||0;
+  const resultBox  = document.getElementById('loanRateResult');
+
   if(!orig||!bal||!pmt){resultBox.style.display='none';return;}
-  let rate,method,confidence,rateLabel;
+
+  let rate,method,confidence,totalInterest,totalCost,remainingMonths,estBalance;
+
   if(manualRate>0){
-    rate=manualRate;method='diminishing';confidence='manual';
-    rateLabel=`${rate}% p.a. (entered manually)`;
+    // Manual override
+    rate=manualRate; method='diminishing'; confidence='manual';
+    const calc=calcLoan(bal,rate,pmt,0,orig);
+    totalInterest=calc.totalInterest;
+    totalCost=calc.totalPaid;
+    remainingMonths=calc.monthsToPayoff;
   } else {
-    const detected=reverseEngineerRate(orig,bal,pmt,paid);
+    const detected=reverseEngineerRate(orig,bal,pmt,paid,term);
     if(!detected){resultBox.style.display='none';return;}
-    rate=detected.rate;method=detected.method;confidence=detected.confidence;
-    rateLabel=`~${rate}% p.a. (auto-detected)`;
+    rate=detected.rate; method=detected.method; confidence=detected.confidence;
     document.getElementById('loan_rate').dataset.autoRate=rate;
+    document.getElementById('loan_rate').dataset.autoMethod=method;
+
+    if(term>0 && method==='addon' && detected.totalInterest!=null){
+      // Exact figures from term-based calculation
+      totalInterest = detected.totalInterest;
+      totalCost     = detected.totalCost;
+      remainingMonths = detected.remainingMonths;
+      estBalance    = detected.estBalance;
+    } else {
+      const calc=calcLoan(bal,rate,pmt,0,orig);
+      totalInterest=calc.totalInterest;
+      totalCost=calc.totalPaid;
+      remainingMonths=calc.monthsToPayoff;
+    }
   }
-  const calc=calcLoan(bal,rate,pmt,0,orig);
-  const effectiveNote=method==='addon'?` — effective rate ≈${Math.round(rate*1.8)}% p.a.`:'';
+
+  const effectiveRate = method==='addon'?Math.round(rate*1.8):null;
+  const effectiveNote = effectiveRate?` — effective ≈${effectiveRate}% p.a.`:'';
   const confidenceColor=confidence==='high'?'var(--green)':confidence==='medium'?'var(--amber)':'var(--red)';
-  const confidenceIcon=confidence==='high'?'🟢':confidence==='medium'?'🟡':'🔴';
-  const confidenceText=confidence==='manual'?''
+  const confidenceIcon =confidence==='high'?'🟢':confidence==='medium'?'🟡':'🔴';
+  const confidenceText =confidence==='manual'?''
     :`${confidenceIcon} Confidence: <strong style="color:${confidenceColor};">${confidence.charAt(0).toUpperCase()+confidence.slice(1)}</strong>`
-    +(confidence==='low'?' — try entering months paid for a better estimate':'');
-  document.getElementById('calcRateDisplay').textContent=rateLabel.split(' ')[0];
-  document.getElementById('calcMonthsDisplay').textContent=calc.monthsToPayoff+' mos';
-  document.getElementById('calcInterestDisplay').textContent=fmt(calc.totalInterest);
-  document.getElementById('calcMethodDisplay').textContent=`Method: ${method==='addon'?'Add-on Rate'+effectiveNote:'Diminishing Balance'}`;
+    +(confidence==='low'?' — add Loan Term for a better estimate':'');
+
+  document.getElementById('calcRateDisplay').textContent=`~${rate}%`;
+  document.getElementById('calcMonthsDisplay').textContent=remainingMonths+' mos left';
+  document.getElementById('calcInterestDisplay').textContent=fmt(totalInterest);
+  document.getElementById('calcMethodDisplay').innerHTML=
+    `Method: <strong>${method==='addon'?'Add-on Rate'+effectiveNote:'Diminishing Balance'}</strong>`
+    +(term>0?` · ${term}-month term`:'');
   document.getElementById('calcConfidenceDisplay').innerHTML=confidenceText;
+
+  // Show total cost too
+  const totalCostEl=document.getElementById('calcTotalCost');
+  if(totalCostEl) totalCostEl.textContent=`Total cost of loan: ${fmt(totalCost)}`;
+
   resultBox.style.display='block';
 }
 
@@ -1297,28 +1418,36 @@ async function submitLoan() {
   const bal=document.getElementById('loan_balance').value;
   const pmt=document.getElementById('loan_payment').value;
   if(!name||!bal||!pmt){showToast('Fill in Loan Name, Balance and Monthly Payment','error');return;}
-  const manualRate=Number(document.getElementById('loan_rate').value)||0;
-  const autoRate=Number(document.getElementById('loan_rate').dataset?.autoRate)||0;
-  const finalRate=manualRate>0?manualRate:autoRate;
+  const manualRate  = Number(document.getElementById('loan_rate').value)||0;
+  const rateEl      = document.getElementById('loan_rate');
+  const autoRate    = Number(rateEl.dataset?.autoRate)||0;
+  const autoMethod  = rateEl.dataset?.autoMethod||'diminishing';
+  const finalRate   = manualRate>0 ? manualRate : autoRate;
+  const term        = document.getElementById('loan_term').value;
+  const monthsPaid  = document.getElementById('loan_months_paid').value;
+  // Store method in notes if add-on so loan card can use it
+  const baseNotes   = document.getElementById('loan_notes').value;
+  const methodTag   = (!manualRate && autoMethod==='addon') ? '[addon]' : '';
   const data={
     name,
-    lender:document.getElementById('loan_lender').value,
-    type:document.getElementById('loan_type').value,
-    originalAmount:document.getElementById('loan_original').value||bal,
-    currentBalance:bal,
-    interestRate:finalRate,
-    monthlyPayment:pmt,
-    dueDay:document.getElementById('loan_due').value,
-    startDate:document.getElementById('loan_start').value,
-    status:document.getElementById('loan_status').value,
-    notes:document.getElementById('loan_notes').value,
+    lender:       document.getElementById('loan_lender').value,
+    type:         document.getElementById('loan_type').value,
+    originalAmount: document.getElementById('loan_original').value||bal,
+    currentBalance: bal,
+    interestRate:   finalRate,
+    monthlyPayment: pmt,
+    dueDay:       document.getElementById('loan_due').value,
+    startDate:    document.getElementById('loan_start').value,
+    status:       document.getElementById('loan_status').value,
+    notes:        [methodTag, term?`term:${term}`:'', monthsPaid?`paid:${monthsPaid}`:'', baseNotes].filter(Boolean).join(' | '),
   };
   const res=await apiPost('addLoan',{data});
   if(res?.success){
     showToast('Loan added!');
     closeModal('loanModal');
-    ['loan_name','loan_lender','loan_original','loan_balance','loan_payment','loan_months_paid','loan_rate','loan_due','loan_notes']
-      .forEach(id=>{const el=document.getElementById(id);if(el){el.value='';delete el.dataset?.autoRate;}});
+    ['loan_name','loan_lender','loan_original','loan_balance','loan_payment',
+     'loan_months_paid','loan_term','loan_rate','loan_due','loan_notes']
+      .forEach(id=>{const el=document.getElementById(id);if(el){el.value='';if(el.dataset)delete el.dataset.autoRate;if(el.dataset)delete el.dataset.autoMethod;}});
     document.getElementById('loanRateResult').style.display='none';
     loadLoans();
   }
