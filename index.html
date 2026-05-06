@@ -1356,7 +1356,6 @@ function reverseEngineerRate(orig, bal, pmt, paid, term) {
 
 function loanAutoCalc(){
   const orig  = Number(document.getElementById('loan_original').value)||0;
-  const bal   = Number(document.getElementById('loan_balance').value)||0;
   const pmt   = Number(document.getElementById('loan_payment').value)||0;
   const paid  = Number(document.getElementById('loan_months_paid').value)||0;
   const term  = Number(document.getElementById('loan_term').value)||0;
@@ -1402,7 +1401,7 @@ function loanAutoCalc(){
   }
 
   const bal = computedBalance;
-  let rate,method,confidence,totalInterest,totalCost,remainingMonths;
+  let rate,method,confidence,totalInterest,totalCost,remainingMonths; // bal is computedBalance — no duplicate
 
   if(manualRate>0){
     rate=manualRate; method='diminishing'; confidence='manual';
@@ -1472,7 +1471,6 @@ async function submitLoan() {
   const autoRate    = Number(rateEl.dataset?.autoRate)||0;
   const autoMethod  = rateEl.dataset?.autoMethod||'diminishing';
   const finalRate   = manualRate>0 ? manualRate : autoRate;
-  const term        = document.getElementById('loan_term').value;
   const monthsPaid  = document.getElementById('loan_months_paid').value;
   // Store method in notes if add-on so loan card can use it
   const baseNotes   = document.getElementById('loan_notes').value;
