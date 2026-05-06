@@ -615,8 +615,8 @@ let pinBuffer = '';
 
 // ══ INIT ══
 document.addEventListener('DOMContentLoaded', () => {
-  // Check PIN session
-  if(sessionStorage.getItem(SESSION_KEY) === 'true') {
+  // Use localStorage so PIN unlock persists across sessions on mobile
+  if(localStorage.getItem(SESSION_KEY) === 'true') {
     document.getElementById('pinScreen').classList.add('hidden');
     initApp();
   }
@@ -659,7 +659,7 @@ function updatePinDots() {
 }
 function checkPin() {
   if(pinBuffer === CORRECT_PIN) {
-    sessionStorage.setItem(SESSION_KEY,'true');
+    localStorage.setItem(SESSION_KEY,'true');
     document.getElementById('pinScreen').classList.add('hidden');
     initApp();
   } else {
