@@ -219,6 +219,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .min-payment-trap p{font-size:12px;color:#fca5a5;line-height:1.6;}
 .min-payment-trap strong{color:var(--red);}
 
+@keyframes spin{to{transform:rotate(360deg);}}
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
@@ -539,7 +540,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
       <div class="form-group"><label class="form-label">Notes (optional)</label><input type="text" class="form-control" id="exp_notes" placeholder="Any notes..."/></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('expenseModal')">Cancel</button><button class="btn btn-primary" onclick="submitExpense()">Save Expense</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('expenseModal')">Cancel</button><button class="btn btn-primary" id="btnSubmitExpense" onclick="submitExpense()">Save Expense</button></div>
   </div>
 </div>
 
@@ -566,7 +567,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
       <div class="form-group"><label class="form-label">Notes</label><input type="text" class="form-control" id="inc_notes" placeholder="Any notes..."/></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('incomeModal')">Cancel</button><button class="btn btn-success" onclick="submitIncome()">Save Income</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('incomeModal')">Cancel</button><button class="btn btn-success" id="btnSubmitIncome" onclick="submitIncome()">Save Income</button></div>
   </div>
 </div>
 
@@ -667,7 +668,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
       <div class="form-group"><label class="form-label">Notes</label><input type="text" class="form-control" id="loan_notes" placeholder="Any notes about this loan..."/></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('loanModal')">Cancel</button><button class="btn btn-primary" onclick="submitLoan()">Save Loan</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('loanModal')">Cancel</button><button class="btn btn-primary" id="btnSubmitLoan" onclick="submitLoan()">Save Loan</button></div>
   </div>
 </div>
 
@@ -689,7 +690,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
       <div class="form-group"><label class="form-label">Notes</label><input type="text" class="form-control" id="goal_notes" placeholder="Why this goal matters..."/></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('goalModal')">Cancel</button><button class="btn btn-primary" onclick="submitGoal()">Save Goal</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('goalModal')">Cancel</button><button class="btn btn-primary" id="btnSubmitGoal" onclick="submitGoal()">Save Goal</button></div>
   </div>
 </div>
 
@@ -730,7 +731,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('paymentModal')">Cancel</button>
-      <button class="btn btn-success" onclick="submitPayment()">Record Payment</button>
+      <button class="btn btn-success" id="btnSubmitPayment" onclick="submitPayment()">Record Payment</button>
     </div>
   </div>
 </div>
@@ -759,7 +760,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Statement Balance (₱)</label><input type="number" class="form-control" id="cc_statement" placeholder="Last billing statement" oninput="ccAutoCalc()"/></div>
-        <div class="form-group"><label class="form-label">Interest Rate (% per month)</label><input type="number" class="form-control" id="cc_rate" placeholder="e.g. 3.5" step="0.01" oninput="ccAutoCalc()"/></div>
+        <div class="form-group"><label class="form-label">Interest Rate (% per month)</label><input type="number" class="form-control" id="cc_rate" placeholder="Leave blank to auto-detect" step="0.01" oninput="ccAutoCalc()"/></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Minimum Payment (₱)</label><input type="number" class="form-control" id="cc_minpayment" placeholder="Or leave blank to auto-compute" oninput="ccAutoCalc()"/></div>
@@ -779,7 +780,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
       <div class="form-group"><label class="form-label">Notes</label><input type="text" class="form-control" id="cc_notes" placeholder="Any notes..."/></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ccModal')">Cancel</button><button class="btn btn-primary" onclick="submitCC()">Save Card</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ccModal')">Cancel</button><button class="btn btn-primary" id="btnSubmitCC" onclick="submitCC()">Save Card</button></div>
   </div>
 </div>
 
@@ -796,7 +797,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div class="form-group"><label class="form-label">Merchant / Description</label><input type="text" class="form-control" id="charge_desc" placeholder="e.g. SM Supermarket, Grab"/></div>
       <div class="form-group"><label class="form-label">Category</label><select class="form-control" id="charge_category"></select></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ccChargeModal')">Cancel</button><button class="btn btn-primary" onclick="submitCharge()">Add Charge</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ccChargeModal')">Cancel</button><button class="btn btn-primary" id="btnSubmitCharge" onclick="submitCharge()">Add Charge</button></div>
   </div>
 </div>
 
@@ -827,7 +828,51 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="ccPaymentNote"></div>
       </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ccPaymentModal')">Cancel</button><button class="btn btn-success" onclick="submitCCPayment()">Record Payment</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ccPaymentModal')">Cancel</button><button class="btn btn-success" id="btnSubmitCCPayment" onclick="submitCCPayment()">Record Payment</button></div>
+  </div>
+</div>
+
+
+<!-- Edit Credit Card Modal -->
+<div class="modal-overlay" id="ccEditModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">✏️ Edit Credit Card</div><button class="modal-close" onclick="closeModal('ccEditModal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="cc_edit_rowIndex"/>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Card Name</label><input type="text" class="form-control" id="cc_edit_name"/></div>
+        <div class="form-group"><label class="form-label">Bank / Issuer</label><input type="text" class="form-control" id="cc_edit_bank"/></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Whose Card?</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <label style="cursor:pointer;"><input type="radio" name="cc_edit_owner" value="Jesse" style="display:none;" onchange="updateCCEditOwnerUI()"/><div id="ccEditOwnerBtn_Jesse" style="text-align:center;padding:10px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-size:13px;font-weight:700;">👤 Jesse</div></label>
+          <label style="cursor:pointer;"><input type="radio" name="cc_edit_owner" value="Veron" style="display:none;" onchange="updateCCEditOwnerUI()"/><div id="ccEditOwnerBtn_Veron" style="text-align:center;padding:10px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-size:13px;font-weight:700;">👤 Veron</div></label>
+          <label style="cursor:pointer;"><input type="radio" name="cc_edit_owner" value="Joint" style="display:none;" onchange="updateCCEditOwnerUI()"/><div id="ccEditOwnerBtn_Joint" style="text-align:center;padding:10px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-size:13px;font-weight:700;">👥 Joint</div></label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Credit Limit (₱)</label><input type="number" class="form-control" id="cc_edit_limit" placeholder="e.g. 50000"/></div>
+        <div class="form-group"><label class="form-label">Interest Rate (% per month)</label><input type="number" class="form-control" id="cc_edit_rate" placeholder="e.g. 3.5" step="0.01"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Min Payment (₱)</label><input type="number" class="form-control" id="cc_edit_minpayment" placeholder="0 = auto-compute"/></div>
+        <div class="form-group"><label class="form-label">Payment Due Day</label><input type="number" class="form-control" id="cc_edit_due" min="1" max="31"/></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Card Status</label>
+        <select class="form-control" id="cc_edit_status">
+          <option value="Active">Active</option>
+          <option value="Closed">Closed / Cancelled</option>
+          <option value="Suspended">Suspended</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><input type="text" class="form-control" id="cc_edit_notes" placeholder="Any notes..."/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ccEditModal')">Cancel</button>
+      <button class="btn btn-primary" id="btnSubmitCCEdit" onclick="submitCCEdit()">Save Changes</button>
+    </div>
   </div>
 </div>
 
@@ -844,7 +889,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         </select>
       </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('categoryModal')">Cancel</button><button class="btn btn-primary" onclick="submitCategory()">Add Category</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('categoryModal')">Cancel</button><button class="btn btn-primary" id="btnSubmitCategory" onclick="submitCategory()">Add Category</button></div>
   </div>
 </div>
 
@@ -863,6 +908,21 @@ let state = {
   income:[], loans:[], budget:[], goals:[], creditCards:[], scriptUrl:'',
 };
 let pinBuffer = '';
+
+// ══ SUBMIT PROTECTION ══
+// Prevents double-submits on all form buttons
+function setSubmitting(btnId, isLoading, originalText) {
+  const btn = document.getElementById(btnId);
+  if(!btn) return;
+  if(isLoading) {
+    btn.disabled = true;
+    btn.dataset.originalText = btn.textContent;
+    btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 0.8s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Saving...</span>';
+  } else {
+    btn.disabled = false;
+    btn.textContent = btn.dataset.originalText || originalText || 'Save';
+  }
+}
 
 // ══ INIT ══
 document.addEventListener('DOMContentLoaded', () => {
@@ -1585,6 +1645,7 @@ function previewNewBalance(){
 }
 
 async function submitPayment(){
+  const _btn=document.getElementById('btnSubmitPayment');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const active=[...state.loans].filter(l=>l.status!=='Paid').sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
   const loan=active[activePaymentLoanIdx];
   const amount=Number(document.getElementById('payment_amount').value);
@@ -1597,7 +1658,8 @@ async function submitPayment(){
   closeModal('paymentModal');
   showToast(isFullyPaid?'🎉 Loan fully paid off! Amazing!':`Payment of ${fmt(amount)} recorded!`);
   loadLoans();
-}
+
+  if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
 
 async function markLoanPaid(idx){
   const active=[...state.loans].filter(l=>l.status!=='Paid').sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
@@ -1656,18 +1718,22 @@ async function loadCategories() {
 
 // ══ SUBMIT FUNCTIONS ══
 async function submitExpense() {
+  const _btn=document.getElementById('btnSubmitExpense');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const data={date:document.getElementById('exp_date').value,person:document.getElementById('exp_person').value,category:document.getElementById('exp_category').value,description:document.getElementById('exp_description').value,amount:document.getElementById('exp_amount').value,paymentMethod:document.getElementById('exp_method').value,notes:document.getElementById('exp_notes').value};
   if(!data.date||!data.amount||!data.category){showToast('Fill in all required fields','error');return;}
   const res=await apiPost('addExpense',{data});
   if(res?.success){showToast('Expense logged!');closeModal('expenseModal');document.getElementById('exp_amount').value='';document.getElementById('exp_description').value='';document.getElementById('exp_notes').value='';refreshCurrentPage();}
-}
+
+  if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
 
 async function submitIncome() {
+  const _btn=document.getElementById('btnSubmitIncome');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const data={date:document.getElementById('inc_date').value,person:document.getElementById('inc_person').value,source:document.getElementById('inc_source').value,type:document.getElementById('inc_type').value,amount:document.getElementById('inc_amount').value,notes:document.getElementById('inc_notes').value};
   if(!data.date||!data.amount||!data.source){showToast('Fill in all required fields','error');return;}
   const res=await apiPost('addIncome',{data});
   if(res?.success){showToast('Income added!');closeModal('incomeModal');document.getElementById('inc_amount').value='';document.getElementById('inc_source').value='';refreshCurrentPage();}
-}
+
+  if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
 
 // ══ INTEREST RATE REVERSE-ENGINEER ══
 // ══ SMART RATE DETECTOR v2 ══
@@ -1861,6 +1927,7 @@ function loanAutoCalc(){
 }
 
 async function submitLoan() {
+  const _btn=document.getElementById('btnSubmitLoan');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const name = document.getElementById('loan_name').value;
   const pmt  = document.getElementById('loan_payment').value;
   const orig = document.getElementById('loan_original').value;
@@ -1908,23 +1975,28 @@ async function submitLoan() {
     document.getElementById('loanRateResult').style.display='none';
     loadLoans();
   }
-}
+
+  if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
 
 async function submitGoal() {
+  const _btn=document.getElementById('btnSubmitGoal');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const data={name:document.getElementById('goal_name').value,target:document.getElementById('goal_target').value,current:document.getElementById('goal_current').value,targetDate:document.getElementById('goal_date').value,priority:document.getElementById('goal_priority').value,notes:document.getElementById('goal_notes').value};
   if(!data.name||!data.target){showToast('Fill in required fields','error');return;}
   const res=await apiPost('addGoal',{data});
   if(res?.success){showToast('Goal added!');closeModal('goalModal');loadGoals();}
-}
+
+  if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
 
 async function submitCategory() {
+  const _btn=document.getElementById('btnSubmitCategory');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const name=document.getElementById('cat_name').value.trim();
   const type=document.getElementById('cat_type').value;
   if(!name){showToast('Enter a category name','error');return;}
   const res=await apiPost('addCategory',{name,type});
   if(res?.error){showToast(res.error,'error');return;}
   if(res?.success){showToast('Category added!');closeModal('categoryModal');document.getElementById('cat_name').value='';loadCategories();loadSettings();}
-}
+
+  if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
 
 
 // ══════════════════════════════════════════════
@@ -1968,22 +2040,96 @@ function calcCCMinPayoffTime(balance, monthlyRate, minPctRate){
   return { months, totalInterest: Math.round(totalInterest) };
 }
 
+// ── CC Rate Reverse-Engineer ──
+// Detects monthly interest rate from balance + min payment
+// Most PH cards: 2%–3.5%/month
+function detectCCRate(balance, minPayment, statement) {
+  const bal = Number(balance);
+  const pmt = Number(minPayment);
+  const stmt = Number(statement)||bal;
+  if(!bal || !pmt) return null;
+
+  // Method 1: If min payment % is known (usually 3% of statement)
+  // Interest = balance * rate → rate = interest / balance
+  // Min payment = principal + interest
+  // For revolving: min ≈ stmt * minPct, where minPct ≈ 3-5%
+  // Estimate: interest portion ≈ min - (stmt * 0.01) [1% principal]
+  const estInterest = pmt - (stmt * 0.01);
+  if(estInterest > 0) {
+    const estRate = (estInterest / stmt) * 100;
+    if(estRate >= 1.5 && estRate <= 5) {
+      return { rate: Math.round(estRate * 10) / 10, confidence: 'medium',
+        note: `~${Math.round(estRate*10)/10}%/mo detected from min payment` };
+    }
+  }
+
+  // Method 2: Brute-force — find rate where computed min matches actual min
+  let bestRate = null, bestDiff = Infinity;
+  for(let r = 1.0; r <= 5.0; r += 0.05) {
+    const computedMin = Math.max(stmt * (r/100) + stmt * 0.01, 500);
+    const diff = Math.abs(computedMin - pmt);
+    if(diff < bestDiff) { bestDiff = diff; bestRate = r; }
+  }
+  if(bestRate !== null) {
+    const confidence = bestDiff < pmt * 0.05 ? 'high' : bestDiff < pmt * 0.15 ? 'medium' : 'low';
+    return { rate: Math.round(bestRate * 10) / 10, confidence,
+      note: `~${Math.round(bestRate*10)/10}%/mo auto-detected` };
+  }
+  return null;
+}
+
 function ccAutoCalc(){
-  const balance  = Number(document.getElementById('cc_balance').value)||0;
-  const rate     = Number(document.getElementById('cc_rate').value)||0;
-  const manualMin= Number(document.getElementById('cc_minpayment').value)||0;
-  const resultBox= document.getElementById('ccCalcResult');
-  if(!balance||!rate){ resultBox.style.display='none'; return; }
+  const balance   = Number(document.getElementById('cc_balance').value)||0;
+  const statement = Number(document.getElementById('cc_statement').value)||0;
+  const manualMin = Number(document.getElementById('cc_minpayment').value)||0;
+  const manualRate= Number(document.getElementById('cc_rate').value)||0;
+  const resultBox = document.getElementById('ccCalcResult');
+  if(!balance){ resultBox.style.display='none'; return; }
+
+  let rate, rateNote, confidence;
+
+  if(manualRate > 0) {
+    // Manual rate entered — use it directly
+    rate = manualRate;
+    rateNote = `${rate}%/mo (entered manually)`;
+    confidence = 'manual';
+  } else if(manualMin > 0 || statement > 0) {
+    // Try to detect from min payment + statement
+    const detected = detectCCRate(balance, manualMin, statement||balance);
+    if(detected) {
+      rate = detected.rate;
+      rateNote = detected.note;
+      confidence = detected.confidence;
+      // Store auto-detected rate
+      document.getElementById('cc_rate').dataset.autoRate = rate;
+    } else {
+      // Fallback to PH average
+      rate = 3.0;
+      rateNote = '~3.0%/mo (PH average estimate)';
+      confidence = 'low';
+    }
+  } else {
+    // Not enough data — use PH average
+    rate = 3.0;
+    rateNote = '~3.0%/mo (PH average — enter min payment for better estimate)';
+    confidence = 'low';
+  }
+
   const minPayment = manualMin > 0 ? manualMin : calcCCMinPayment(balance, rate);
   const trap = calcCCMinPayoffTime(balance, rate, minPayment/balance);
-  const monthlyInterest = balance * (rate/100);
+  const monthlyInterest = Math.round(balance * (rate/100));
+
+  const confColor = confidence==='high'?'var(--green)':confidence==='medium'?'var(--amber)':'var(--text-subtle)';
+  const confIcon  = confidence==='high'?'🟢':confidence==='medium'?'🟡':confidence==='manual'?'✏️':'🔴';
+
   document.getElementById('ccMinDisplay').textContent = fmt(minPayment);
   document.getElementById('ccMonthsDisplay').textContent = trap.months + ' mos';
   document.getElementById('ccInterestDisplay').textContent = fmt(trap.totalInterest);
   document.getElementById('ccWarningText').innerHTML =
+    `<span style="color:${confColor};font-size:11px;">${confIcon} Rate: ${rateNote}</span><br/>` +
     `Paying only the minimum on ₱${balance.toLocaleString()} at ${rate}%/month:<br/>` +
     `<strong style="color:var(--red);">You'll pay ${fmt(trap.totalInterest)} in interest</strong> and take <strong style="color:var(--red);">${trap.months} months</strong> to clear this card.<br/>` +
-    `This month's interest alone: <strong style="color:var(--amber);">${fmt(Math.round(monthlyInterest))}</strong>`;
+    `This month's interest alone: <strong style="color:var(--amber);">${fmt(monthlyInterest)}</strong>`;
   resultBox.style.display = 'block';
 }
 
@@ -2101,7 +2247,8 @@ function renderCCCard(c, idx){
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-primary btn-sm" onclick="openCCChargeModal(${idx})">🛒 Add Charge</button>
       <button class="btn btn-success btn-sm" onclick="openCCPaymentModal(${idx})">💳 Pay</button>
-      <button class="btn btn-ghost btn-sm" onclick="updateCCStatement(${idx})">📋 Update Statement</button>
+      <button class="btn btn-ghost btn-sm" onclick="updateCCStatement(${idx})">📋 Statement</button>
+      <button class="btn btn-ghost btn-sm" onclick="openCCEditModal(${idx})">✏️ Edit</button>
     </div>
   </div>`;
 }
@@ -2128,6 +2275,7 @@ function openCCChargeModal(idx){
 }
 
 async function submitCharge(){
+  const _btn=document.getElementById('btnSubmitCharge');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const sorted=[...state.creditCards].filter(c=>c.status!=='Closed').sort((a,b)=>{
     const uA=a.creditLimit>0?(a.currentBalance/a.creditLimit):0;
     const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
@@ -2148,7 +2296,8 @@ async function submitCharge(){
   closeModal('ccChargeModal');
   showToast(`Charge of ${fmt(amount)} added to ${card.cardName}`);
   loadCreditCards();
-}
+
+  if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
 
 // ── CC Payment Modal ──
 function openCCPaymentModal(idx){
@@ -2215,6 +2364,7 @@ function previewCCPayment(){
 }
 
 async function submitCCPayment(){
+  const _btn=document.getElementById('btnSubmitCCPayment');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const sorted=[...state.creditCards].filter(c=>c.status!=='Closed').sort((a,b)=>{
     const uA=a.creditLimit>0?(a.currentBalance/a.creditLimit):0;
     const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
@@ -2229,7 +2379,8 @@ async function submitCCPayment(){
   closeModal('ccPaymentModal');
   showToast(newBal===0?`🎉 ${card.cardName} fully paid off!`:`Payment of ${fmt(amount)} recorded!`);
   loadCreditCards();
-}
+
+  if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
 
 async function updateCCStatement(idx){
   const sorted=[...state.creditCards].filter(c=>c.status!=='Closed').sort((a,b)=>{
@@ -2248,6 +2399,7 @@ async function updateCCStatement(idx){
 
 // ── Submit Add Card ──
 async function submitCC(){
+  const _btn=document.getElementById('btnSubmitCC');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const name=document.getElementById('cc_name').value;
   const limit=document.getElementById('cc_limit').value;
   if(!name||!limit){showToast('Card Name and Credit Limit are required','error');return;}
@@ -2260,7 +2412,10 @@ async function submitCC(){
     creditLimit:limit,
     currentBalance: document.getElementById('cc_balance').value||0,
     statementBalance: document.getElementById('cc_statement').value||0,
-    interestRate: document.getElementById('cc_rate').value||0,
+    interestRate: (()=>{
+      const el=document.getElementById('cc_rate');
+      return Number(el.value)||Number(el.dataset.autoRate)||0;
+    })(),
     minPayment: document.getElementById('cc_minpayment').value||0,
     dueDay:     document.getElementById('cc_due').value,
     status:     'Active',
@@ -2277,7 +2432,8 @@ async function submitCC(){
     if(jesseR){jesseR.checked=true;updateCCOwnerUI();}
     loadCreditCards();
   }
-}
+
+  if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
 
 // Wire CC payment preview
 document.addEventListener('DOMContentLoaded',()=>{
@@ -2285,6 +2441,73 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(ccAmtEl) ccAmtEl.addEventListener('input',previewCCPayment);
 });
 
+
+
+// ── CC Edit Modal ──
+function updateCCEditOwnerUI(){
+  ['Jesse','Veron','Joint'].forEach(o=>{
+    const btn=document.getElementById('ccEditOwnerBtn_'+o);
+    const radio=document.querySelector(`input[name="cc_edit_owner"][value="${o}"]`);
+    if(!btn||!radio) return;
+    const color=o==='Jesse'?'var(--blue)':o==='Veron'?'var(--purple)':'var(--teal)';
+    const bg=o==='Jesse'?'rgba(59,130,246,0.15)':o==='Veron'?'rgba(139,92,246,0.15)':'rgba(20,184,166,0.15)';
+    if(radio.checked){btn.style.border=`2px solid ${color}`;btn.style.background=bg;btn.style.color=color;}
+    else{btn.style.border='2px solid var(--border)';btn.style.background='transparent';btn.style.color='var(--text-muted)';}
+  });
+}
+
+function openCCEditModal(idx){
+  const sorted=[...state.creditCards].filter(c=>c.status!=='Closed').sort((a,b)=>{
+    const uA=a.creditLimit>0?(a.currentBalance/a.creditLimit):0;
+    const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
+    return uB-uA;
+  });
+  const card=sorted[idx];
+  document.getElementById('cc_edit_rowIndex').value=card.rowIndex;
+  document.getElementById('cc_edit_name').value=card.cardName;
+  document.getElementById('cc_edit_bank').value=card.bank;
+  document.getElementById('cc_edit_limit').value=card.creditLimit;
+  document.getElementById('cc_edit_rate').value=card.interestRate;
+  document.getElementById('cc_edit_minpayment').value=card.minPayment||'';
+  document.getElementById('cc_edit_due').value=card.dueDay||'';
+  document.getElementById('cc_edit_status').value=card.status||'Active';
+  // Strip owner/system tags from notes for display
+  const cleanNotes=(card.notes||'').replace(/owner:(Jesse|Veron|Joint)\s*\|?\s*/g,'').trim();
+  document.getElementById('cc_edit_notes').value=cleanNotes;
+  // Set owner radio
+  const owner=getCCOwner(card);
+  const ownerRadio=document.querySelector(`input[name="cc_edit_owner"][value="${owner}"]`);
+  if(ownerRadio){ownerRadio.checked=true;}
+  updateCCEditOwnerUI();
+  openModal('ccEditModal');
+}
+
+async function submitCCEdit(){
+  setSubmitting('btnSubmitCCEdit',true);
+  try{
+    const rowIndex=Number(document.getElementById('cc_edit_rowIndex').value);
+    const ownerRadio=document.querySelector('input[name="cc_edit_owner"]:checked');
+    const owner=ownerRadio?ownerRadio.value:'Jesse';
+    const baseNotes=document.getElementById('cc_edit_notes').value;
+    const data={
+      cardName:    document.getElementById('cc_edit_name').value,
+      bank:        document.getElementById('cc_edit_bank').value,
+      creditLimit: document.getElementById('cc_edit_limit').value,
+      interestRate:document.getElementById('cc_edit_rate').value,
+      minPayment:  document.getElementById('cc_edit_minpayment').value||0,
+      dueDay:      document.getElementById('cc_edit_due').value,
+      status:      document.getElementById('cc_edit_status').value,
+      notes:       [`owner:${owner}`, baseNotes].filter(Boolean).join(' | '),
+    };
+    if(!data.cardName){showToast('Card name is required','error');return;}
+    const res=await apiPost('updateCreditCard',{rowIndex,data});
+    if(res?.success){
+      showToast('Card updated!');
+      closeModal('ccEditModal');
+      loadCreditCards();
+    }
+  } finally { setSubmitting('btnSubmitCCEdit',false); }
+}
 
 document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
 </script>
