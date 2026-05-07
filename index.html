@@ -243,8 +243,49 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   .page{padding:16px;}
   .topbar{padding:12px 16px;}
   .loan-stats{grid-template-columns:1fr 1fr;}
+  .cc-stats{grid-template-columns:1fr 1fr;}
+  /* Dashboard inline grids */
+  .dash-two-col{grid-template-columns:1fr !important;}
+  /* Owner split 3-col → 1-col */
+  .owner-split-grid{grid-template-columns:1fr !important;}
+  /* Modal owner buttons 3-col → 1-col */
+  .owner-btn-grid{grid-template-columns:1fr 1fr 1fr;}
+  /* CC card actions wrap naturally */
+  .cc-card .btn{font-size:12px;}
+  /* Section headers stack */
+  .section-header{flex-wrap:wrap;gap:8px;}
 }
-@media(max-width:400px){.stat-grid{grid-template-columns:1fr;}}
+@media(max-width:480px){
+  /* Full single column on phones */
+  .stat-grid{grid-template-columns:1fr;}
+  .loan-stats{grid-template-columns:1fr;}
+  .cc-stats{grid-template-columns:1fr;}
+  .income-split{grid-template-columns:1fr;}
+  /* Dashboard 2-col panels → stack */
+  .dash-two-col{grid-template-columns:1fr !important;}
+  /* Owner split */
+  .owner-split-grid{grid-template-columns:1fr !important;}
+  /* Payment quick-fill buttons */
+  .payment-quick-btns{grid-template-columns:1fr !important;}
+  /* Modal padding tighter */
+  .modal{padding:0;margin:8px;}
+  .modal-body{padding:16px;}
+  .modal-header{padding:16px;}
+  .modal-footer{padding:12px 16px;}
+  /* Page padding */
+  .page{padding:12px;}
+  /* Card padding */
+  .card{padding:14px;}
+  .cc-card{padding:14px;}
+  /* Topbar */
+  .topbar-title{font-size:14px;}
+  /* Loan card actions wrap */
+  .loan-actions{flex-wrap:wrap;}
+}
+@media(max-width:360px){
+  .stat-grid{grid-template-columns:1fr;}
+  .page{padding:10px;}
+}
 
 /* ── SETUP SCREEN ── */
 .setup-screen{position:fixed;inset:0;background:#0f172a;z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;}
@@ -322,8 +363,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <div class="nav-item" onclick="navigate('creditcards')"><span class="nav-icon">💳</span> Credit Cards</div>
     <div class="nav-item" onclick="navigate('settings')"><span class="nav-icon">⚙️</span> Settings</div>
   </div>
-  <div class="sidebar-footer">
+  <div class="sidebar-footer" id="sidebarFooter">
     <strong>Jesse & Veron Estrada</strong><br/>Family Financial Dashboard
+    <div style="margin-top:6px;display:flex;justify-content:flex-end;"><span style="font-size:10px;color:var(--text-subtle);background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;letter-spacing:0.5px;">v1.5</span></div>
   </div>
 </nav>
 
@@ -414,7 +456,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     </div>
     <!-- Owner split summary -->
     <div id="ownerSummary" style="display:none;margin-bottom:20px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div class="owner-split-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
         <div class="card" style="border-left:3px solid var(--blue);">
           <div class="card-title">👤 Jesse</div>
           <div style="font-size:18px;font-weight:800;color:var(--red);" id="jesseDebt">₱0</div>
@@ -461,7 +503,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     </div>
     <!-- Owner split -->
     <div id="ccOwnerSplit" style="display:none;margin-bottom:20px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div class="owner-split-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
         <div class="card" style="border-left:3px solid var(--blue);">
           <div class="card-title">👤 Jesse</div>
           <div style="font-size:18px;font-weight:800;color:var(--red);" id="ccJesseDebt">₱0</div>
@@ -722,7 +764,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <!-- Quick fill buttons -->
       <div style="margin-bottom:16px;">
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Quick Fill</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="loan-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-ghost btn-sm" onclick="fillPayment('regular')">Regular Payment</button>
           <button class="btn btn-ghost btn-sm" onclick="fillPayment('full')">Pay Full Balance</button>
         </div>
@@ -813,7 +855,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <div class="modal-body">
       <div id="ccPaymentCardName" style="font-size:15px;font-weight:700;color:#fff;margin-bottom:4px;"></div>
       <div id="ccPaymentCardBalance" style="font-size:13px;color:var(--text-muted);margin-bottom:20px;"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+      <div class="payment-quick-btns" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
         <button class="btn btn-ghost btn-sm" style="justify-content:center;" onclick="fillCCPayment('minimum')">Minimum</button>
         <button class="btn btn-ghost btn-sm" style="justify-content:center;" onclick="fillCCPayment('statement')">Statement</button>
         <button class="btn btn-ghost btn-sm" style="justify-content:center;" onclick="fillCCPayment('full')">Full Balance</button>
@@ -1179,7 +1221,7 @@ async function loadDashboard() {
         <div class="card-sub">Loans + Credit Cards combined</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+    <div class="dash-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
       <div class="card">
         <div class="section-header" style="margin-bottom:12px;"><div class="section-title" style="font-size:14px;">⚠️ Budget Alerts</div><button class="btn btn-ghost btn-sm" onclick="navigate('budget')">View All</button></div>
         ${alertHtml}
@@ -1189,7 +1231,7 @@ async function loadDashboard() {
         ${catBars||'<div style="color:var(--text-muted);font-size:13px;">No expenses this month</div>'}
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="dash-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
       <div class="card">
         <div class="section-header" style="margin-bottom:12px;"><div class="section-title" style="font-size:14px;">🕐 Recent Expenses</div><button class="btn btn-ghost btn-sm" onclick="navigate('expenses')">View All</button></div>
         ${recentHtml}
@@ -1602,7 +1644,7 @@ function renderLoanCard(l,idx,isPaid) {
         <div class="calc-result">Paying <strong>${fmt(l.monthlyPayment)}/mo</strong> → payoff in <strong>${calc.monthsToPayoff} months</strong> (${calc.payoffDate})<br/>Total interest: <span class="warning">${fmt(calc.totalInterest)}</span></div>
       </div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <div class="loan-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-success btn-sm" onclick="openPaymentModal(${idx})">💳 Record Payment</button>
       <button class="btn btn-ghost btn-sm" onclick="markLoanPaid(${idx})">✅ Mark Paid Off</button>
     </div>
@@ -2304,7 +2346,7 @@ function renderCCCard(c, idx){
     </div>
     ${trapHtml}
     <!-- Actions -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <div class="loan-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-primary btn-sm" onclick="openCCChargeModal(${idx})">🛒 Add Charge</button>
       <button class="btn btn-success btn-sm" onclick="openCCPaymentModal(${idx})">💳 Pay</button>
       <button class="btn btn-ghost btn-sm" onclick="updateCCStatement(${idx})">📋 Statement</button>
@@ -2571,5 +2613,54 @@ async function submitCCEdit(){
 
 document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
 </script>
+
+  <!-- ══ SERVICE WORKER — auto-update on new deploy ══ -->
+  <script>
+    if('serviceWorker' in navigator) {
+      // Inline service worker — cache-first with network update check
+      const swCode = `
+        const VERSION = 'v1.5';
+        const CACHE = 'ef-finance-' + VERSION;
+        self.addEventListener('install', e => {
+          self.skipWaiting();
+        });
+        self.addEventListener('activate', e => {
+          e.waitUntil(
+            caches.keys().then(keys =>
+              Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+            ).then(() => self.clients.claim())
+          );
+        });
+        self.addEventListener('fetch', e => {
+          // Network first for the main HTML — always get latest
+          if(e.request.mode === 'navigate') {
+            e.respondWith(
+              fetch(e.request).catch(() => caches.match(e.request))
+            );
+            return;
+          }
+          e.respondWith(
+            caches.match(e.request).then(cached => cached || fetch(e.request))
+          );
+        });
+      `;
+      const blob = new Blob([swCode], {type: 'application/javascript'});
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).then(reg => {
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if(newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+              // New version activated — show toast and reload
+              if(typeof showToast === 'function') {
+                showToast('✨ App updated to v1.5! Refreshing...', 'success');
+                setTimeout(() => window.location.reload(), 2000);
+              }
+            }
+          });
+        });
+      }).catch(err => console.log('SW:', err));
+    }
+  </script>
 </body>
 </html>
