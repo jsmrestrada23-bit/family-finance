@@ -1649,11 +1649,11 @@ async function submitPayment(){
   const active=[...state.loans].filter(l=>l.status!=='Paid').sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
   const loan=active[activePaymentLoanIdx];
   const amount=Number(document.getElementById('payment_amount').value);
-  if(!amount||amount<=0){showToast('Enter a payment amount','error');return;}
+  if(!amount||amount<=0){showToast('Enter a payment amount','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   const newBal=Math.max(0,Number(loan.currentBalance)-amount);
   const isFullyPaid=newBal===0;
   const res=await apiPost('updateLoanBalance',{rowIndex:loan.rowIndex,newBalance:newBal});
-  if(!res?.success){showToast('Error recording payment','error');return;}
+  if(!res?.success){showToast('Error recording payment','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   if(isFullyPaid) await apiPost('markLoanPaid',{rowIndex:loan.rowIndex});
   closeModal('paymentModal');
   showToast(isFullyPaid?'🎉 Loan fully paid off! Amazing!':`Payment of ${fmt(amount)} recorded!`);
@@ -1720,7 +1720,7 @@ async function loadCategories() {
 async function submitExpense() {
   const _btn=document.getElementById('btnSubmitExpense');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const data={date:document.getElementById('exp_date').value,person:document.getElementById('exp_person').value,category:document.getElementById('exp_category').value,description:document.getElementById('exp_description').value,amount:document.getElementById('exp_amount').value,paymentMethod:document.getElementById('exp_method').value,notes:document.getElementById('exp_notes').value};
-  if(!data.date||!data.amount||!data.category){showToast('Fill in all required fields','error');return;}
+  if(!data.date||!data.amount||!data.category){showToast('Fill in all required fields','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   const res=await apiPost('addExpense',{data});
   if(res?.success){showToast('Expense logged!');closeModal('expenseModal');document.getElementById('exp_amount').value='';document.getElementById('exp_description').value='';document.getElementById('exp_notes').value='';refreshCurrentPage();}
 
@@ -1729,7 +1729,7 @@ async function submitExpense() {
 async function submitIncome() {
   const _btn=document.getElementById('btnSubmitIncome');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const data={date:document.getElementById('inc_date').value,person:document.getElementById('inc_person').value,source:document.getElementById('inc_source').value,type:document.getElementById('inc_type').value,amount:document.getElementById('inc_amount').value,notes:document.getElementById('inc_notes').value};
-  if(!data.date||!data.amount||!data.source){showToast('Fill in all required fields','error');return;}
+  if(!data.date||!data.amount||!data.source){showToast('Fill in all required fields','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   const res=await apiPost('addIncome',{data});
   if(res?.success){showToast('Income added!');closeModal('incomeModal');document.getElementById('inc_amount').value='';document.getElementById('inc_source').value='';refreshCurrentPage();}
 
@@ -1936,6 +1936,7 @@ async function submitLoan() {
   const bal  = document.getElementById('loan_balance').value || orig;
   if(!name||!orig||!pmt||!term){
     showToast('Fill in Loan Name, Original Amount, Monthly Payment and Term','error');
+    if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}
     return;
   }
   const manualRate  = Number(document.getElementById('loan_rate').value)||0;
@@ -1981,7 +1982,7 @@ async function submitLoan() {
 async function submitGoal() {
   const _btn=document.getElementById('btnSubmitGoal');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const data={name:document.getElementById('goal_name').value,target:document.getElementById('goal_target').value,current:document.getElementById('goal_current').value,targetDate:document.getElementById('goal_date').value,priority:document.getElementById('goal_priority').value,notes:document.getElementById('goal_notes').value};
-  if(!data.name||!data.target){showToast('Fill in required fields','error');return;}
+  if(!data.name||!data.target){showToast('Fill in required fields','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   const res=await apiPost('addGoal',{data});
   if(res?.success){showToast('Goal added!');closeModal('goalModal');loadGoals();}
 
@@ -1991,9 +1992,9 @@ async function submitCategory() {
   const _btn=document.getElementById('btnSubmitCategory');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const name=document.getElementById('cat_name').value.trim();
   const type=document.getElementById('cat_type').value;
-  if(!name){showToast('Enter a category name','error');return;}
+  if(!name){showToast('Enter a category name','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   const res=await apiPost('addCategory',{name,type});
-  if(res?.error){showToast(res.error,'error');return;}
+  if(res?.error){showToast(res.error,'error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   if(res?.success){showToast('Category added!');closeModal('categoryModal');document.getElementById('cat_name').value='';loadCategories();loadSettings();}
 
   if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
@@ -2286,11 +2287,11 @@ async function submitCharge(){
   const desc=document.getElementById('charge_desc').value;
   const date=document.getElementById('charge_date').value;
   const category=document.getElementById('charge_category').value;
-  if(!amount||amount<=0){showToast('Enter a charge amount','error');return;}
+  if(!amount||amount<=0){showToast('Enter a charge amount','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   const newBalance=Number(card.currentBalance)+amount;
   // Update card balance
   const res=await apiPost('updateCCBalance',{rowIndex:card.rowIndex,newBalance});
-  if(!res?.success){showToast('Error adding charge','error');return;}
+  if(!res?.success){showToast('Error adding charge','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   // Log as expense too
   await apiPost('addExpense',{data:{date,person:getCCOwner(card),category,description:`${desc||category} [${card.cardName}]`,amount,paymentMethod:'Credit Card',notes:`CC: ${card.cardName}`}});
   closeModal('ccChargeModal');
@@ -2372,10 +2373,10 @@ async function submitCCPayment(){
   });
   const card=sorted[activeCCIdx];
   const amount=Number(document.getElementById('cc_payment_amount').value);
-  if(!amount||amount<=0){showToast('Enter a payment amount','error');return;}
+  if(!amount||amount<=0){showToast('Enter a payment amount','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   const newBal=Math.max(0,Number(card.currentBalance)-amount);
   const res=await apiPost('updateCCBalance',{rowIndex:card.rowIndex,newBalance:newBal});
-  if(!res?.success){showToast('Error recording payment','error');return;}
+  if(!res?.success){showToast('Error recording payment','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   closeModal('ccPaymentModal');
   showToast(newBal===0?`🎉 ${card.cardName} fully paid off!`:`Payment of ${fmt(amount)} recorded!`);
   loadCreditCards();
@@ -2402,7 +2403,7 @@ async function submitCC(){
   const _btn=document.getElementById('btnSubmitCC');if(_btn){_btn.disabled=true;_btn.dataset.ot=_btn.textContent;_btn.textContent='Saving...';}
   const name=document.getElementById('cc_name').value;
   const limit=document.getElementById('cc_limit').value;
-  if(!name||!limit){showToast('Card Name and Credit Limit are required','error');return;}
+  if(!name||!limit){showToast('Card Name and Credit Limit are required','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   const ownerRadio=document.querySelector('input[name="cc_owner"]:checked');
   const owner=ownerRadio?ownerRadio.value:'Jesse';
   const baseNotes=document.getElementById('cc_notes').value;
@@ -2499,7 +2500,7 @@ async function submitCCEdit(){
       status:      document.getElementById('cc_edit_status').value,
       notes:       [`owner:${owner}`, baseNotes].filter(Boolean).join(' | '),
     };
-    if(!data.cardName){showToast('Card name is required','error');return;}
+    if(!data.cardName){showToast('Card name is required','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
     const res=await apiPost('updateCreditCard',{rowIndex,data});
     if(res?.success){
       showToast('Card updated!');
