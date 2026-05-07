@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Estrada Family Finance</title>
   <!-- ══ FAVICON + PWA ══ -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='pg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%233b82f6'/%3E%3Cstop offset='100%25' stop-color='%231d4ed8'/%3E%3C/linearGradient%3E%3C/defs%3E%3C!-- Vertical stem --%3E%3Crect x='18' y='10' width='14' height='80' rx='7' fill='url(%23pg)'/%3E%3C!-- P bowl --%3E%3Cpath d='M32 10 Q72 10 72 35 Q72 60 32 60 L32 10Z' fill='url(%23pg)'/%3E%3Cpath d='M36 22 Q60 22 60 35 Q60 48 36 48 L36 22Z' fill='%230f172a'/%3E%3C!-- Bar 1 --%3E%3Crect x='12' y='62' width='52' height='10' rx='5' fill='url(%23pg)'/%3E%3C!-- Bar 2 --%3E%3Crect x='12' y='76' width='52' height='10' rx='5' fill='url(%23pg)'/%3E%3C/svg%3E"/>
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='pg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%233b82f6'/%3E%3Cstop offset='100%25' stop-color='%231d4ed8'/%3E%3C/linearGradient%3E%3C/defs%3E%3C!-- Vertical stem --%3E%3Crect x='18' y='10' width='14' height='80' rx='7' fill='url(%23pg)'/%3E%3C!-- P bowl --%3E%3Cpath d='M32 10 Q72 10 72 35 Q72 60 32 60 L32 10Z' fill='url(%23pg)'/%3E%3Cpath d='M36 22 Q60 22 60 35 Q60 48 36 48 L36 22Z' fill='%230f172a'/%3E%3C!-- Bar 1 --%3E%3Crect x='12' y='62' width='52' height='10' rx='5' fill='url(%23pg)'/%3E%3C!-- Bar 2 --%3E%3Crect x='12' y='76' width='52' height='10' rx='5' fill='url(%23pg)'/%3E%3C/svg%3E"/>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231e40af'/%3E%3Cstop offset='100%25' stop-color='%233b82f6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='url(%23g)'/%3E%3Ctext x='50' y='63' font-family='Arial Black,Arial,sans-serif' font-size='36' font-weight='900' text-anchor='middle' fill='white' letter-spacing='-2'%3EEF%3C/text%3E%3C/svg%3E"/>
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231e40af'/%3E%3Cstop offset='100%25' stop-color='%233b82f6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='50' fill='url(%23g)'/%3E%3Ctext x='50' y='63' font-family='Arial Black,Arial,sans-serif' font-size='36' font-weight='900' text-anchor='middle' fill='white' letter-spacing='-2'%3EEF%3C/text%3E%3C/svg%3E"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Estrada Finance"/>
@@ -405,7 +405,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div class="card"><div class="card-title">Total Outstanding Debt</div><div class="card-value amount-negative" id="loanTotalDebt">₱0</div></div>
       <div class="card"><div class="card-title">Monthly Obligations</div><div class="card-value" id="loanMonthlyObl">₱0</div><div class="card-sub">Minimum payments</div></div>
       <div class="card"><div class="card-title">Active Loans</div><div class="card-value" id="loanCount">0</div></div>
-      <div class="card"><div class="card-title">Total Lifetime Interest</div><div class="card-value amount-negative" id="loanTotalInterest">₱0</div><div class="card-sub">Cost of borrowing</div></div>
+      <div class="card"><div class="card-title">Total Lifetime Interest</div><div class="card-value amount-negative" id="loanTotalInterest">₱0</div><div class="card-sub" id="loanInterestSub">Cost of borrowing</div></div>
     </div>
     <!-- Owner split summary -->
     <div id="ownerSummary" style="display:none;margin-bottom:20px;">
@@ -1299,9 +1299,37 @@ async function loadLoans() {
   document.getElementById('loanTotalDebt').textContent=fmt(totalDebt);
   document.getElementById('loanMonthlyObl').textContent=fmt(monthlyObl);
   document.getElementById('loanCount').textContent=active.length;
+  // Future interest on active loans
   let totalInterest=0;
   active.forEach(l=>{const c=calcLoan(l.currentBalance,l.interestRate,l.monthlyPayment,0,l.originalAmount);totalInterest+=c.totalInterest;});
-  document.getElementById('loanTotalInterest').textContent=fmt(totalInterest);
+  // Add interest already paid on closed/paid loans
+  let interestAlreadyPaid=0;
+  paid.forEach(l=>{
+    if(l.interestPaid!=null && l.interestPaid>0){
+      // Use stored value — exact amount paid
+      interestAlreadyPaid+=l.interestPaid;
+    } else {
+      // Fallback: estimate from original amount and term stored in notes
+      const notes=l.notes||'';
+      const termMatch=notes.match(/term:(\d+)/);
+      if(termMatch){
+        const term=Number(termMatch[1]);
+        const estInterest=Math.max(0,(l.monthlyPayment*term)-l.originalAmount);
+        interestAlreadyPaid+=estInterest;
+      }
+    }
+  });
+  const lifetimeInterest=totalInterest+interestAlreadyPaid;
+  document.getElementById('loanTotalInterest').textContent=fmt(lifetimeInterest);
+  // Update subtitle to show breakdown
+  const interestSubEl=document.getElementById('loanInterestSub');
+  if(interestSubEl){
+    if(interestAlreadyPaid>0){
+      interestSubEl.textContent=`${fmt(totalInterest)} ahead + ${fmt(interestAlreadyPaid)} already paid`;
+    } else {
+      interestSubEl.textContent='Projected on active loans';
+    }
+  }
 
   // Owner split summary
   const owners=['Jesse','Veron','Joint'];
@@ -1514,7 +1542,9 @@ function renderLoanCard(l,idx,isPaid) {
 
   // Paid off card — compact
   if(isPaid){
-    return `<div class="loan-card" style="opacity:0.7;border-color:rgba(34,197,94,0.3);">
+    const paidInterest = l.interestPaid!=null && l.interestPaid>0 ? l.interestPaid
+      : (()=>{ const tm=(l.notes||'').match(/term:(\d+)/); return tm?Math.max(0,(l.monthlyPayment*Number(tm[1]))-l.originalAmount):0; })();
+    return `<div class="loan-card" style="opacity:0.75;border-color:rgba(34,197,94,0.3);">
       <div class="loan-header">
         <div>
           <div class="loan-name">${l.name}</div>
@@ -1522,7 +1552,8 @@ function renderLoanCard(l,idx,isPaid) {
         </div>
         <span class="badge badge-green">✅ Paid Off</span>
       </div>
-      <div style="font-size:12px;color:var(--text-muted);">Original: ${fmt(l.originalAmount)} · ${l.type}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">Original: ${fmt(l.originalAmount)} · ${l.type}</div>
+      ${paidInterest>0?`<div style="font-size:12px;color:#fca5a5;">💸 You paid <strong>${fmt(Math.round(paidInterest))}</strong> in interest on this loan</div>`:''}
     </div>`;
   }
 
@@ -1654,7 +1685,20 @@ async function submitPayment(){
   const isFullyPaid=newBal===0;
   const res=await apiPost('updateLoanBalance',{rowIndex:loan.rowIndex,newBalance:newBal});
   if(!res?.success){showToast('Error recording payment','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
-  if(isFullyPaid) await apiPost('markLoanPaid',{rowIndex:loan.rowIndex});
+  if(isFullyPaid){
+    // Calculate total interest paid on this loan before marking it done
+    const loanNotes=loan.notes||'';
+    const termMatch=loanNotes.match(/term:(\d+)/);
+    let interestPaid=0;
+    if(termMatch){
+      const term=Number(termMatch[1]);
+      interestPaid=Math.max(0,(loan.monthlyPayment*term)-loan.originalAmount);
+    } else {
+      const calc=calcLoan(loan.originalAmount,loan.interestRate,loan.monthlyPayment,0,loan.originalAmount);
+      interestPaid=calc.totalInterest;
+    }
+    await apiPost('markLoanPaid',{rowIndex:loan.rowIndex,interestPaid});
+  }
   closeModal('paymentModal');
   showToast(isFullyPaid?'🎉 Loan fully paid off! Amazing!':`Payment of ${fmt(amount)} recorded!`);
   loadLoans();
@@ -1665,7 +1709,17 @@ async function markLoanPaid(idx){
   const active=[...state.loans].filter(l=>l.status!=='Paid').sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
   const loan=active[idx];
   if(!confirm(`Mark "${loan.name}" as fully paid off?`)) return;
-  const res=await apiPost('markLoanPaid',{rowIndex:loan.rowIndex});
+  // Compute interest paid before marking done
+  const lNotes=loan.notes||'';
+  const tMatch=lNotes.match(/term:(\d+)/);
+  let iPaid=0;
+  if(tMatch){
+    iPaid=Math.max(0,(loan.monthlyPayment*Number(tMatch[1]))-loan.originalAmount);
+  } else {
+    const c=calcLoan(loan.originalAmount,loan.interestRate,loan.monthlyPayment,0,loan.originalAmount);
+    iPaid=c.totalInterest;
+  }
+  const res=await apiPost('markLoanPaid',{rowIndex:loan.rowIndex,interestPaid:iPaid});
   if(res?.success){showToast('🎉 Loan marked as paid off!');loadLoans();}
 }
 
