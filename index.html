@@ -365,7 +365,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   </div>
   <div class="sidebar-footer" id="sidebarFooter">
     <strong>Jesse & Veron Estrada</strong><br/>Family Financial Dashboard
-    <div style="margin-top:6px;display:flex;justify-content:flex-end;"><span style="font-size:10px;color:var(--text-subtle);background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;letter-spacing:0.5px;">v1.5</span></div>
+    <div style="margin-top:6px;display:flex;justify-content:flex-end;"><span style="font-size:10px;color:var(--text-subtle);background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;letter-spacing:0.5px;">v1.6</span></div>
   </div>
 </nav>
 
@@ -475,6 +475,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
     </div>
     <!-- Active loans -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;" id="loanOwnerFilterBar">
+      <button class="btn btn-sm" id="loanFilter_All" onclick="setLoanFilter('All')" style="border-radius:20px;background:var(--blue);color:#fff;border:none;">All</button>
+      <button class="btn btn-ghost btn-sm" id="loanFilter_Jesse" onclick="setLoanFilter('Jesse')" style="border-radius:20px;">👤 Jesse</button>
+      <button class="btn btn-ghost btn-sm" id="loanFilter_Veron" onclick="setLoanFilter('Veron')" style="border-radius:20px;">👤 Veron</button>
+      <button class="btn btn-ghost btn-sm" id="loanFilter_Joint" onclick="setLoanFilter('Joint')" style="border-radius:20px;">👥 Joint</button>
+    </div>
     <div id="loanCards"><div class="loader"><div class="spinner"></div> Loading loans...</div></div>
     <!-- Paid off loans -->
     <div id="paidLoansSection" style="display:none;margin-top:28px;">
@@ -522,6 +528,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
     </div>
     <!-- Card list -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;" id="ccOwnerFilterBar">
+      <button class="btn btn-sm" id="ccFilter_All" onclick="setCCFilter('All')" style="border-radius:20px;background:var(--blue);color:#fff;border:none;">All</button>
+      <button class="btn btn-ghost btn-sm" id="ccFilter_Jesse" onclick="setCCFilter('Jesse')" style="border-radius:20px;">👤 Jesse</button>
+      <button class="btn btn-ghost btn-sm" id="ccFilter_Veron" onclick="setCCFilter('Veron')" style="border-radius:20px;">👤 Veron</button>
+      <button class="btn btn-ghost btn-sm" id="ccFilter_Joint" onclick="setCCFilter('Joint')" style="border-radius:20px;">👥 Joint</button>
+    </div>
     <div id="ccCards"><div class="loader"><div class="spinner"></div> Loading cards...</div></div>
   </div>
 
@@ -745,21 +757,38 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 <div class="modal-overlay" id="paymentModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">💳 Record Payment</div>
+      <div class="modal-title">💳 Record Loan Payment</div>
       <button class="modal-close" onclick="closeModal('paymentModal')">✕</button>
     </div>
     <div class="modal-body">
       <div id="paymentLoanName" style="font-size:15px;font-weight:700;color:#fff;margin-bottom:4px;"></div>
-      <div id="paymentLoanBalance" style="font-size:13px;color:var(--text-muted);margin-bottom:20px;"></div>
+      <div id="paymentLoanBalance" style="font-size:13px;color:var(--text-muted);margin-bottom:16px;"></div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Payment Amount (₱)</label>
-          <input type="number" class="form-control" id="payment_amount" placeholder="e.g. 3473.17" step="0.01"/>
+          <input type="number" class="form-control" id="payment_amount" placeholder="e.g. 3473.17" step="0.01" oninput="previewNewBalance()"/>
         </div>
         <div class="form-group">
           <label class="form-label">Payment Date</label>
           <input type="date" class="form-control" id="payment_date"/>
         </div>
+      </div>
+      <!-- Payment Method -->
+      <div class="form-group">
+        <label class="form-label">Payment Method</label>
+        <select class="form-control" id="payment_method" onchange="togglePaymentCCRow()">
+          <option value="Cash">Cash</option>
+          <option value="Bank Transfer" selected>Bank Transfer</option>
+          <option value="GCash">GCash</option>
+          <option value="Maya">Maya</option>
+          <option value="Auto-debit">Auto-debit</option>
+          <option value="Credit Card">Credit Card</option>
+        </select>
+      </div>
+      <!-- CC selector — shown only when Credit Card is selected -->
+      <div class="form-group" id="paymentCCRow" style="display:none;">
+        <label class="form-label">Which Card? <span style="color:var(--text-subtle);font-weight:400;">(charge will be added to this card)</span></label>
+        <select class="form-control" id="payment_cc_card"></select>
       </div>
       <!-- Quick fill buttons -->
       <div style="margin-bottom:16px;">
@@ -774,6 +803,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">New Balance After Payment</div>
         <div style="font-size:20px;font-weight:800;color:var(--green);" id="newBalanceAmount">₱0</div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="newBalanceNote"></div>
+      </div>
+      <!-- Sync note -->
+      <div style="margin-top:12px;font-size:12px;color:var(--text-subtle);background:rgba(59,130,246,0.06);border-radius:8px;padding:10px 12px;">
+        💡 This payment will automatically sync to your <strong>Expenses</strong> tab under "Loan Payments".
       </div>
     </div>
     <div class="modal-footer">
@@ -842,7 +875,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-control" id="charge_date"/></div>
       </div>
       <div class="form-group"><label class="form-label">Merchant / Description</label><input type="text" class="form-control" id="charge_desc" placeholder="e.g. SM Supermarket, Grab"/></div>
-      <div class="form-group"><label class="form-label">Category</label><select class="form-control" id="charge_category"></select></div>
+      <div class="form-group"><label class="form-label">Category</label><select class="form-control" id="charge_category" onchange="toggleChargeLoanTag()"></select></div>
+      <!-- Loan tag — shown only when category is Loan Payments -->
+      <div class="form-group" id="chargeLoanTagRow" style="display:none;">
+        <label class="form-label">Tag a Loan <span style="color:var(--text-subtle);font-weight:400;">(optional — logs payment on that loan too)</span></label>
+        <select class="form-control" id="charge_loan_tag">
+          <option value="">— Select loan —</option>
+        </select>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ccChargeModal')">Cancel</button><button class="btn btn-primary" id="btnSubmitCharge" onclick="submitCharge()">Add Charge</button></div>
   </div>
@@ -1397,21 +1437,8 @@ async function loadLoans() {
     return;
   }
 
-  // Active loans sorted by interest rate (highest first)
-  const sorted=[...active].sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
-  document.getElementById('loanCards').innerHTML=sorted.length
-    ?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${sorted.map((l,i)=>renderLoanCard(l,i,false)).join('')}</div>`
-    :'<div class="empty-state"><div class="empty-icon">🎉</div><p>All loans paid off! Amazing work.</p></div>';
-
-  // Paid off loans
-  if(paid.length){
-    document.getElementById('paidLoansSection').style.display='block';
-    document.getElementById('paidLoanCount').textContent=paid.length;
-    document.getElementById('paidLoanCards').innerHTML=
-      `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${paid.map((l,i)=>renderLoanCard(l,i,true)).join('')}</div>`;
-  } else {
-    document.getElementById('paidLoansSection').style.display='none';
-  }
+  // Render with current filter
+  renderFilteredLoans();
 }
 
 function togglePaidLoans(){
@@ -1687,6 +1714,34 @@ function updateOwnerUI(){
 // ── PAYMENT MODAL ──
 let activePaymentLoanIdx=null;
 
+function togglePaymentCCRow(){
+  const method=document.getElementById('payment_method').value;
+  const row=document.getElementById('paymentCCRow');
+  if(method==='Credit Card'){
+    // Populate CC dropdown with active cards
+    const cards=(state.creditCards||[]).filter(c=>c.status!=='Closed');
+    document.getElementById('payment_cc_card').innerHTML=
+      cards.map((c,i)=>`<option value="${i}">${c.cardName} (${getCCOwner(c)}) · Bal: ${fmt(c.currentBalance)}</option>`).join('');
+    row.style.display='block';
+  } else {
+    row.style.display='none';
+  }
+}
+
+function toggleChargeLoanTag(){
+  const cat=document.getElementById('charge_category').value;
+  const row=document.getElementById('chargeLoanTagRow');
+  if(cat==='Loan Payments'){
+    const activeLoans=(state.loans||[]).filter(l=>l.status!=='Paid');
+    document.getElementById('charge_loan_tag').innerHTML=
+      '<option value="">— Select loan —</option>'+
+      activeLoans.map((l,i)=>`<option value="${l.rowIndex}">${l.name} · Bal: ${fmt(l.currentBalance)}</option>`).join('');
+    row.style.display='block';
+  } else {
+    row.style.display='none';
+  }
+}
+
 function openPaymentModal(idx){
   const active=[...state.loans].filter(l=>l.status!=='Paid').sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
   const loan=active[idx];
@@ -1698,6 +1753,8 @@ function openPaymentModal(idx){
   amtEl.dataset.regularPayment=loan.monthlyPayment;
   amtEl.dataset.fullBalance=loan.currentBalance;
   document.getElementById('payment_date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('payment_method').value='Bank Transfer';
+  document.getElementById('paymentCCRow').style.display='none';
   document.getElementById('newBalancePreview').style.display='none';
   openModal('paymentModal');
 }
@@ -1727,13 +1784,43 @@ async function submitPayment(){
   const active=[...state.loans].filter(l=>l.status!=='Paid').sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
   const loan=active[activePaymentLoanIdx];
   const amount=Number(document.getElementById('payment_amount').value);
+  const payDate=document.getElementById('payment_date').value;
+  const payMethod=document.getElementById('payment_method').value;
   if(!amount||amount<=0){showToast('Enter a payment amount','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
   const newBal=Math.max(0,Number(loan.currentBalance)-amount);
   const isFullyPaid=newBal===0;
+  const loanOwner=getLoanOwner(loan);
+
+  // 1. Update loan balance
   const res=await apiPost('updateLoanBalance',{rowIndex:loan.rowIndex,newBalance:newBal});
   if(!res?.success){showToast('Error recording payment','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
+
+  // 2. If paid via Credit Card — charge that card too
+  if(payMethod==='Credit Card'){
+    const cards=(state.creditCards||[]).filter(c=>c.status!=='Closed');
+    const ccIdx=Number(document.getElementById('payment_cc_card').value)||0;
+    const card=cards[ccIdx];
+    if(card){
+      const newCCBal=Number(card.currentBalance)+amount;
+      await apiPost('updateCCBalance',{rowIndex:card.rowIndex,newBalance:newCCBal});
+      // Log as CC charge (which auto-syncs to expenses via the charge flow)
+      await apiPost('addExpense',{data:{
+        date:payDate, person:loanOwner, category:'Loan Payments',
+        description:`${loan.name} repayment [${card.cardName}]`,
+        amount, paymentMethod:'Credit Card', notes:`Loan: ${loan.name} | CC: ${card.cardName}`
+      }});
+    }
+  } else {
+    // 3. Log as expense — Loan Payments category
+    await apiPost('addExpense',{data:{
+      date:payDate, person:loanOwner, category:'Loan Payments',
+      description:`${loan.name} repayment`,
+      amount, paymentMethod:payMethod, notes:`Loan: ${loan.name}`
+    }});
+  }
+
+  // 4. Mark fully paid if balance is zero
   if(isFullyPaid){
-    // Calculate total interest paid on this loan before marking it done
     const loanNotes=loan.notes||'';
     const termMatch=loanNotes.match(/term:(\d+)/);
     let interestPaid=0;
@@ -1746,10 +1833,10 @@ async function submitPayment(){
     }
     await apiPost('markLoanPaid',{rowIndex:loan.rowIndex,interestPaid});
   }
-  closeModal('paymentModal');
-  showToast(isFullyPaid?'🎉 Loan fully paid off! Amazing!':`Payment of ${fmt(amount)} recorded!`);
-  loadLoans();
 
+  closeModal('paymentModal');
+  showToast(isFullyPaid?'🎉 Loan fully paid off! Amazing!':`Payment of ${fmt(amount)} recorded & synced to Expenses!`);
+  loadLoans();
   if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
 
 async function markLoanPaid(idx){
@@ -2280,10 +2367,8 @@ async function loadCreditCards(){
     const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
     return uB-uA;
   });
-  document.getElementById('ccCards').innerHTML=
-    `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
-      ${sorted.map((c,i)=>renderCCCard(c,i)).join('')}
-    </div>`;
+  // Render with current filter
+  renderFilteredCC();
 }
 
 function getCCOwner(c){
@@ -2357,6 +2442,67 @@ function renderCCCard(c, idx){
 
 // ── CC Charge Modal ──
 let activeCCIdx = null;
+let loanOwnerFilter = 'All';
+let ccOwnerFilter   = 'All';
+
+function setLoanFilter(owner){
+  loanOwnerFilter = owner;
+  ['All','Jesse','Veron','Joint'].forEach(o=>{
+    const btn = document.getElementById('loanFilter_'+o);
+    if(!btn) return;
+    if(o===owner){ btn.style.background='var(--blue)'; btn.style.color='#fff'; btn.style.border='none'; }
+    else { btn.style.background='transparent'; btn.style.color='var(--text-muted)'; btn.style.border='1px solid var(--border)'; }
+  });
+  renderFilteredLoans();
+}
+
+function setCCFilter(owner){
+  ccOwnerFilter = owner;
+  ['All','Jesse','Veron','Joint'].forEach(o=>{
+    const btn = document.getElementById('ccFilter_'+o);
+    if(!btn) return;
+    if(o===owner){ btn.style.background='var(--blue)'; btn.style.color='#fff'; btn.style.border='none'; }
+    else { btn.style.background='transparent'; btn.style.color='var(--text-muted)'; btn.style.border='1px solid var(--border)'; }
+  });
+  renderFilteredCC();
+}
+
+function renderFilteredLoans(){
+  const loans = state.loans || [];
+  const active = loans.filter(l=>l.status!=='Paid');
+  const paid   = loans.filter(l=>l.status==='Paid');
+  const filtered = loanOwnerFilter==='All' ? active
+    : active.filter(l=>getLoanOwner(l)===loanOwnerFilter);
+  const sorted = [...filtered].sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
+  document.getElementById('loanCards').innerHTML = sorted.length
+    ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${sorted.map((l,i)=>renderLoanCard(l,i,false)).join('')}</div>`
+    : `<div class="empty-state"><div class="empty-icon">🔍</div><p>No ${loanOwnerFilter==='All'?'active':loanOwnerFilter} loans.</p></div>`;
+  // Paid section always shows all
+  const paidSection = document.getElementById('paidLoansSection');
+  if(paid.length && loanOwnerFilter==='All'){
+    paidSection.style.display='block';
+    document.getElementById('paidLoanCount').textContent=paid.length;
+    document.getElementById('paidLoanCards').innerHTML=
+      `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${paid.map((l,i)=>renderLoanCard(l,i,true)).join('')}</div>`;
+  } else {
+    paidSection.style.display='none';
+  }
+}
+
+function renderFilteredCC(){
+  const cards = state.creditCards || [];
+  const active = cards.filter(c=>c.status!=='Closed');
+  const filtered = ccOwnerFilter==='All' ? active
+    : active.filter(c=>getCCOwner(c)===ccOwnerFilter);
+  const sorted = [...filtered].sort((a,b)=>{
+    const uA=a.creditLimit>0?(a.currentBalance/a.creditLimit):0;
+    const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
+    return uB-uA;
+  });
+  document.getElementById('ccCards').innerHTML = sorted.length
+    ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${sorted.map((c,i)=>renderCCCard(c,i)).join('')}</div>`
+    : `<div class="empty-state"><div class="empty-icon">🔍</div><p>No ${ccOwnerFilter==='All'?'active':ccOwnerFilter} cards.</p></div>`;
+}
 
 function openCCChargeModal(idx){
   const sorted=[...state.creditCards].filter(c=>c.status!=='Closed').sort((a,b)=>{
@@ -2373,6 +2519,9 @@ function openCCChargeModal(idx){
   // Populate category dropdown
   const sel=document.getElementById('charge_category');
   sel.innerHTML=state.categories.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
+  // Reset loan tag
+  const loanTagRow=document.getElementById('chargeLoanTagRow');
+  if(loanTagRow) loanTagRow.style.display='none';
   openModal('ccChargeModal');
 }
 
@@ -2393,12 +2542,34 @@ async function submitCharge(){
   // Update card balance
   const res=await apiPost('updateCCBalance',{rowIndex:card.rowIndex,newBalance});
   if(!res?.success){showToast('Error adding charge','error'); if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';} return;}
-  // Log as expense too
+  // Log as expense
   await apiPost('addExpense',{data:{date,person:getCCOwner(card),category,description:`${desc||category} [${card.cardName}]`,amount,paymentMethod:'Credit Card',notes:`CC: ${card.cardName}`}});
-  closeModal('ccChargeModal');
-  showToast(`Charge of ${fmt(amount)} added to ${card.cardName}`);
-  loadCreditCards();
 
+  // If tagged as loan payment — also reduce that loan's balance
+  const loanTag=document.getElementById('charge_loan_tag');
+  const loanRowIndex=loanTag&&category==='Loan Payments'?loanTag.value:'';
+  if(loanRowIndex!==''){
+    const taggedLoan=(state.loans||[]).find(l=>String(l.rowIndex)===String(loanRowIndex));
+    if(taggedLoan){
+      const newLoanBal=Math.max(0,Number(taggedLoan.currentBalance)-amount);
+      await apiPost('updateLoanBalance',{rowIndex:taggedLoan.rowIndex,newBalance:newLoanBal});
+      if(newLoanBal===0){
+        const lNotes=taggedLoan.notes||'';
+        const tM=lNotes.match(/term:(\d+)/);
+        let iPaid=0;
+        if(tM) iPaid=Math.max(0,(taggedLoan.monthlyPayment*Number(tM[1]))-taggedLoan.originalAmount);
+        else { const c=calcLoan(taggedLoan.originalAmount,taggedLoan.interestRate,taggedLoan.monthlyPayment,0,taggedLoan.originalAmount); iPaid=c.totalInterest; }
+        await apiPost('markLoanPaid',{rowIndex:taggedLoan.rowIndex,interestPaid:iPaid});
+      }
+      showToast(`Charge added + ${taggedLoan.name} balance updated!`);
+    }
+  } else {
+    showToast(`Charge of ${fmt(amount)} added to ${card.cardName} & synced to Expenses!`);
+  }
+
+  closeModal('ccChargeModal');
+  loadCreditCards();
+  loadLoans();
   if(_btn){_btn.disabled=false;_btn.textContent=_btn.dataset.ot||'Save';}}
 
 // ── CC Payment Modal ──
@@ -2619,7 +2790,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('clic
     if('serviceWorker' in navigator) {
       // Inline service worker — cache-first with network update check
       const swCode = `
-        const VERSION = 'v1.5';
+        const VERSION = 'v1.6';
         const CACHE = 'ef-finance-' + VERSION;
         self.addEventListener('install', e => {
           self.skipWaiting();
@@ -2653,7 +2824,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('clic
             if(newWorker.state === 'activated' && navigator.serviceWorker.controller) {
               // New version activated — show toast and reload
               if(typeof showToast === 'function') {
-                showToast('✨ App updated to v1.5! Refreshing...', 'success');
+                showToast('✨ App updated to v1.6! Refreshing...', 'success');
                 setTimeout(() => window.location.reload(), 2000);
               }
             }
