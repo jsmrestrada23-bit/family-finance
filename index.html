@@ -1714,14 +1714,22 @@ function updateOwnerUI(){
 // ── PAYMENT MODAL ──
 let activePaymentLoanIdx=null;
 
-function togglePaymentCCRow(){
+async function togglePaymentCCRow(){
   const method=document.getElementById('payment_method').value;
   const row=document.getElementById('paymentCCRow');
   if(method==='Credit Card'){
-    // Populate CC dropdown with active cards
+    // Fetch fresh if state not loaded (e.g. coming from Loans page)
+    if(!state.creditCards||state.creditCards.length===0){
+      const fetched=await apiGet('getCreditCards');
+      if(fetched) state.creditCards=fetched;
+    }
     const cards=(state.creditCards||[]).filter(c=>c.status!=='Closed');
-    document.getElementById('payment_cc_card').innerHTML=
-      cards.map((c,i)=>`<option value="${i}">${c.cardName} (${getCCOwner(c)}) · Bal: ${fmt(c.currentBalance)}</option>`).join('');
+    const sel=document.getElementById('payment_cc_card');
+    if(!cards.length){
+      sel.innerHTML='<option value="">— No active cards found —</option>';
+    } else {
+      sel.innerHTML=cards.map((c,i)=>`<option value="${i}">${c.cardName} (${getCCOwner(c)}) · Bal: ${fmt(c.currentBalance)}</option>`).join('');
+    }
     row.style.display='block';
   } else {
     row.style.display='none';
