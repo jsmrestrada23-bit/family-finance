@@ -365,7 +365,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   </div>
   <div class="sidebar-footer" id="sidebarFooter">
     <strong>Jesse & Veron Estrada</strong><br/>Family Financial Dashboard
-    <div style="margin-top:6px;display:flex;justify-content:flex-end;"><span style="font-size:10px;color:var(--text-subtle);background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;letter-spacing:0.5px;">v1.6</span></div>
+    <div style="margin-top:6px;display:flex;justify-content:flex-end;"><span style="font-size:10px;color:var(--text-subtle);background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;letter-spacing:0.5px;">v1.7</span></div>
   </div>
 </nav>
 
@@ -2471,19 +2471,54 @@ function renderFilteredLoans(){
   const loans = state.loans || [];
   const active = loans.filter(l=>l.status!=='Paid');
   const paid   = loans.filter(l=>l.status==='Paid');
-  const filtered = loanOwnerFilter==='All' ? active
-    : active.filter(l=>getLoanOwner(l)===loanOwnerFilter);
+  const isFiltered = loanOwnerFilter !== 'All';
+  const filtered = isFiltered ? active.filter(l=>getLoanOwner(l)===loanOwnerFilter) : active;
   const sorted = [...filtered].sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
+
+  // ── Update stat cards to reflect current filter ──
+  const filteredDebt    = filtered.reduce((s,l)=>s+Number(l.currentBalance),0);
+  const filteredMonthly = filtered.reduce((s,l)=>s+Number(l.monthlyPayment),0);
+
+  // Lifetime interest: future on filtered active + already paid on filtered paid
+  let filteredFutureInterest = 0;
+  filtered.forEach(l=>{ const c=calcLoan(l.currentBalance,l.interestRate,l.monthlyPayment,0,l.originalAmount); filteredFutureInterest+=c.totalInterest; });
+  let filteredPaidInterest = 0;
+  const filteredPaid = isFiltered ? paid.filter(l=>getLoanOwner(l)===loanOwnerFilter) : paid;
+  filteredPaid.forEach(l=>{
+    if(l.interestPaid!=null&&l.interestPaid>0){ filteredPaidInterest+=l.interestPaid; }
+    else { const notes=l.notes||''; const tm=notes.match(/term:(\d+)/); if(tm) filteredPaidInterest+=Math.max(0,(l.monthlyPayment*Number(tm[1]))-l.originalAmount); }
+  });
+  const filteredLifetime = filteredFutureInterest + filteredPaidInterest;
+
+  // Stat card label suffix when filtered
+  const suffix = isFiltered ? ` · ${loanOwnerFilter}` : '';
+  document.getElementById('loanTotalDebt').textContent    = fmt(filteredDebt);
+  document.getElementById('loanMonthlyObl').textContent   = fmt(filteredMonthly);
+  document.getElementById('loanCount').textContent        = filtered.length;
+  document.getElementById('loanTotalInterest').textContent= fmt(filteredLifetime);
+  const subEl = document.getElementById('loanInterestSub');
+  if(subEl){
+    if(isFiltered){
+      subEl.textContent = `${loanOwnerFilter} only · ${fmt(filteredFutureInterest)} ahead + ${fmt(filteredPaidInterest)} paid`;
+    } else {
+      subEl.textContent = filteredPaidInterest>0
+        ? `${fmt(filteredFutureInterest)} ahead + ${fmt(filteredPaidInterest)} already paid`
+        : 'Projected on active loans';
+    }
+  }
+
+  // ── Render cards ──
   document.getElementById('loanCards').innerHTML = sorted.length
     ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${sorted.map((l,i)=>renderLoanCard(l,i,false)).join('')}</div>`
-    : `<div class="empty-state"><div class="empty-icon">🔍</div><p>No ${loanOwnerFilter==='All'?'active':loanOwnerFilter} loans.</p></div>`;
-  // Paid section always shows all
+    : `<div class="empty-state"><div class="empty-icon">🔍</div><p>No ${isFiltered?loanOwnerFilter:'active'} loans.</p></div>`;
+
+  // Paid section — show filtered paid too
   const paidSection = document.getElementById('paidLoansSection');
-  if(paid.length && loanOwnerFilter==='All'){
+  if(filteredPaid.length){
     paidSection.style.display='block';
-    document.getElementById('paidLoanCount').textContent=paid.length;
+    document.getElementById('paidLoanCount').textContent=filteredPaid.length;
     document.getElementById('paidLoanCards').innerHTML=
-      `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${paid.map((l,i)=>renderLoanCard(l,i,true)).join('')}</div>`;
+      `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${filteredPaid.map((l,i)=>renderLoanCard(l,i,true)).join('')}</div>`;
   } else {
     paidSection.style.display='none';
   }
@@ -2492,16 +2527,35 @@ function renderFilteredLoans(){
 function renderFilteredCC(){
   const cards = state.creditCards || [];
   const active = cards.filter(c=>c.status!=='Closed');
-  const filtered = ccOwnerFilter==='All' ? active
-    : active.filter(c=>getCCOwner(c)===ccOwnerFilter);
+  const isFiltered = ccOwnerFilter !== 'All';
+  const filtered = isFiltered ? active.filter(c=>getCCOwner(c)===ccOwnerFilter) : active;
   const sorted = [...filtered].sort((a,b)=>{
     const uA=a.creditLimit>0?(a.currentBalance/a.creditLimit):0;
     const uB=b.creditLimit>0?(b.currentBalance/b.creditLimit):0;
     return uB-uA;
   });
+
+  // ── Update stat cards to reflect current filter ──
+  const fDebt    = filtered.reduce((s,c)=>s+Number(c.currentBalance),0);
+  const fLimit   = filtered.reduce((s,c)=>s+Number(c.creditLimit),0);
+  const fAvail   = fLimit - fDebt;
+  const fUtil    = fLimit>0 ? Math.round((fDebt/fLimit)*100) : 0;
+  const fMin     = filtered.reduce((s,c)=>s+Number(c.minPayment||calcCCMinPayment(c.currentBalance,c.interestRate)),0);
+  const utilColor= fUtil<=30?'var(--green)':fUtil<=60?'var(--amber)':fUtil<=90?'#f97316':'var(--red)';
+  const utilNote = fUtil<=30?'🟢 Healthy':fUtil<=60?'🟡 Watch it':fUtil<=90?'🟠 High':'🔴 Maxed out';
+
+  document.getElementById('ccTotalDebt').textContent   = fmt(fDebt);
+  document.getElementById('ccAvailable').textContent   = fmt(fAvail);
+  document.getElementById('ccMinPayments').textContent = fmt(fMin);
+  const utilEl = document.getElementById('ccUtilization');
+  if(utilEl){ utilEl.textContent=fUtil+'%'; utilEl.style.color=utilColor; }
+  const utilNoteEl = document.getElementById('ccUtilNote');
+  if(utilNoteEl) utilNoteEl.textContent = (isFiltered ? ccOwnerFilter+' · ' : '') + utilNote;
+
+  // ── Render cards ──
   document.getElementById('ccCards').innerHTML = sorted.length
     ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">${sorted.map((c,i)=>renderCCCard(c,i)).join('')}</div>`
-    : `<div class="empty-state"><div class="empty-icon">🔍</div><p>No ${ccOwnerFilter==='All'?'active':ccOwnerFilter} cards.</p></div>`;
+    : `<div class="empty-state"><div class="empty-icon">🔍</div><p>No ${isFiltered?ccOwnerFilter:'active'} cards.</p></div>`;
 }
 
 function openCCChargeModal(idx){
@@ -2790,7 +2844,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('clic
     if('serviceWorker' in navigator) {
       // Inline service worker — cache-first with network update check
       const swCode = `
-        const VERSION = 'v1.6';
+        const VERSION = 'v1.7';
         const CACHE = 'ef-finance-' + VERSION;
         self.addEventListener('install', e => {
           self.skipWaiting();
@@ -2824,7 +2878,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('clic
             if(newWorker.state === 'activated' && navigator.serviceWorker.controller) {
               // New version activated — show toast and reload
               if(typeof showToast === 'function') {
-                showToast('✨ App updated to v1.6! Refreshing...', 'success');
+                showToast('✨ App updated to v1.7! Refreshing...', 'success');
                 setTimeout(() => window.location.reload(), 2000);
               }
             }
