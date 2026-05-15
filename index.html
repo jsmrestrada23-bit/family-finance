@@ -423,6 +423,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div class="card" style="border-left:3px solid var(--teal);"><div class="card-title">👥 Joint</div><div style="font-size:18px;font-weight:800;color:var(--red);" id="jointDebt">₱0</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="jointMonthly"></div></div>
       </div>
     </div>
+    <div style="margin-bottom:12px;">
+      <input type="text" id="loanSearchInput" class="form-control" placeholder="🔍 Search loans... (e.g. BDO, SSS, car)" oninput="renderFilteredLoans()" style="max-width:400px;"/>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;" id="loanOwnerFilterBar">
       <button class="btn btn-sm" id="loanFilter_All" onclick="setLoanFilter('All')" style="border-radius:20px;background:var(--blue);color:#fff;border:none;">All</button>
       <button class="btn btn-ghost btn-sm" id="loanFilter_Jesse" onclick="setLoanFilter('Jesse')" style="border-radius:20px;">👤 Jesse</button>
@@ -506,6 +509,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
 <!-- ══ LOCK BUTTON (always visible after login) ══ -->
 <button class="lock-btn" id="lockBtn" onclick="lockApp()" style="display:none;">🔒 Lock</button>
+
+<!-- ══ GLOBAL QUICK PAY BUTTON ══ -->
+<button id="quickPayBtn" onclick="openQuickPayModal()" style="display:none;position:fixed;bottom:24px;right:24px;z-index:150;background:var(--green-dim);color:#fff;border:none;border-radius:50px;padding:14px 22px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:all 0.2s ease;display:none;align-items:center;gap:8px;">💳 Quick Pay</button>
+
+<!-- Quick Pay Search Modal -->
+<div class="modal-overlay" id="quickPayModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">💳 Quick Pay — Select a Loan</div><button class="modal-close" onclick="closeModal('quickPayModal')">✕</button></div>
+    <div class="modal-body">
+      <input type="text" class="form-control" id="quickPaySearch" placeholder="🔍 Type loan name, lender..." oninput="renderQuickPayList()" style="margin-bottom:14px;"/>
+      <div id="quickPayList" style="max-height:340px;overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ══ MODALS ══ -->
 
@@ -921,6 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if(localStorage.getItem(SESSION_KEY) === 'true') {
     document.getElementById('pinScreen').classList.add('hidden');
     document.getElementById('lockBtn').style.display = 'block';
+    document.getElementById('quickPayBtn').style.display = 'flex';
     initApp();
   }
   const amtEl = document.getElementById('payment_amount');
@@ -966,6 +984,7 @@ function checkPin() {
     localStorage.setItem(SESSION_KEY,'true');
     document.getElementById('pinScreen').classList.add('hidden');
     document.getElementById('lockBtn').style.display = 'block';
+    document.getElementById('quickPayBtn').style.display = 'flex';
     initApp();
   } else {
     document.getElementById('pinError').textContent = 'Incorrect PIN. Try again.';
@@ -978,6 +997,7 @@ function checkPin() {
 function lockApp() {
   localStorage.removeItem(SESSION_KEY);
   document.getElementById('lockBtn').style.display = 'none';
+  document.getElementById('quickPayBtn').style.display = 'none';
   document.getElementById('pinScreen').classList.remove('hidden');
   pinBuffer = '';
   updatePinDots();
@@ -2166,7 +2186,9 @@ function renderFilteredLoans(){
   const active=loans.filter(l=>l.status!=='Paid');
   const paid=loans.filter(l=>l.status==='Paid');
   const isFiltered=loanOwnerFilter!=='All';
-  const filtered=isFiltered?active.filter(l=>getLoanOwner(l)===loanOwnerFilter):active;
+  const searchQ=(document.getElementById('loanSearchInput')?.value||'').toLowerCase();
+  const ownerFiltered=isFiltered?active.filter(l=>getLoanOwner(l)===loanOwnerFilter):active;
+  const filtered=searchQ?ownerFiltered.filter(l=>l.name.toLowerCase().includes(searchQ)||(l.lender||'').toLowerCase().includes(searchQ)||(l.type||'').toLowerCase().includes(searchQ)):ownerFiltered;
   const sorted=[...filtered].sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
   const filteredDebt=filtered.reduce((s,l)=>s+Number(l.currentBalance),0);
   const filteredMonthly=filtered.reduce((s,l)=>s+Number(l.monthlyPayment),0);
@@ -2482,7 +2504,56 @@ async function submitCCEdit(){
   }
 }
 
+// ══ QUICK PAY ══
+async function openQuickPayModal(){
+  // Pre-load loans if not yet loaded
+  if(!state.loans||state.loans.length===0){
+    const loans=await apiGet('getLoans');
+    if(loans) state.loans=loans;
+  }
+  document.getElementById('quickPaySearch').value='';
+  renderQuickPayList();
+  openModal('quickPayModal');
+}
+
+function renderQuickPayList(){
+  const q=(document.getElementById('quickPaySearch').value||'').toLowerCase();
+  const active=(state.loans||[]).filter(l=>l.status!=='Paid');
+  const filtered=q?active.filter(l=>
+    l.name.toLowerCase().includes(q)||
+    (l.lender||'').toLowerCase().includes(q)||
+    (l.type||'').toLowerCase().includes(q)
+  ):active;
+  const sorted=[...filtered].sort((a,b)=>Number(b.interestRate)-Number(a.interestRate));
+  if(!sorted.length){
+    document.getElementById('quickPayList').innerHTML='<div class="empty-state" style="padding:24px;"><div class="empty-icon">🔍</div><p>No loans match your search.</p></div>';
+    return;
+  }
+  document.getElementById('quickPayList').innerHTML=sorted.map(l=>{
+    const owner=getLoanOwner(l);
+    const ownerColor=owner==='Jesse'?'var(--blue)':owner==='Veron'?'var(--purple)':'var(--teal)';
+    const dueLabel=l.dueDay?`Due day ${l.dueDay}`:'No due day set';
+    return `<div onclick="quickPaySelect(${l.rowIndex})" style="padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;cursor:pointer;transition:all 0.15s ease;background:var(--navy);" onmouseover="this.style.borderColor='var(--blue)';this.style.background='rgba(59,130,246,0.08)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--navy)'">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:14px;font-weight:700;color:#fff;">${l.name}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--red);">${fmt(l.currentBalance)}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:12px;color:var(--text-muted);">${l.lender||'—'} · ${dueLabel}</span>
+        <span style="font-size:11px;font-weight:700;color:${ownerColor};">👤 ${owner}</span>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:auto;">${fmt(l.monthlyPayment)}/mo</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function quickPaySelect(rowIdx){
+  closeModal('quickPayModal');
+  openPaymentModal(rowIdx);
+}
+
 // Close modal on overlay click
+
 document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
 </script>
 
